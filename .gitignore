@@ -155,12 +155,8 @@ temp/
 downloads/
 vinetrimmer/logs/
 vinetrimmer/cookies/
-vinetrimmer/devices/*.prd
-vinetrimmer/devices/*/PR.json
 vinetrimmer/devices/*/*.prd
 vinetrimmer/key_store.db
-vinetrimmer/vinetrimmer.yml
-vinetrimmer/vinetrimmer.yml.bak
 
 # OS specific
 Thumbs.db
