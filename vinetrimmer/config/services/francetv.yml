@@ -1,0 +1,5 @@
+endpoints:
+  video: "https://k7.ftven.fr/videos/{video_id}"
+  drm_token: "https://k7.ftven.fr/drm-token"
+  license: "https://api-drm.ftven.fr/v1/prls/contentlicenseservice/v1/licenses"
+needs_auth: false
