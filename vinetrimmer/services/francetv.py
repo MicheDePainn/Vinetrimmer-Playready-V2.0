@@ -160,8 +160,7 @@ class FranceTV(BaseService):
         manifest_url = next((u for u in manifest_urls if "france-domtom" not in u), manifest_urls[0])
         self.log.info(f" + Manifest URL: {manifest_url}")
             
-        if not self.drm_token:
-            self._fetch_drm_token(title.id)
+        self._fetch_drm_token(title.id)
 
         tracks = Tracks.from_mpd(url=manifest_url, session=self.session, source=self.ALIASES[0])
         
@@ -198,8 +197,7 @@ class FranceTV(BaseService):
             self.log.warning(f" - Failed to fetch DRM token: {e}")
 
     def license(self, challenge, title, track, **kwargs):
-        if not self.drm_token:
-            self._fetch_drm_token(title.id)
+        self._fetch_drm_token(title.id)
 
         headers = {
             "nv-authorizations": self.drm_token,
