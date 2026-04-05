@@ -154,7 +154,6 @@ cython_debug/
 temp/
 downloads/
 vinetrimmer/logs/
-vinetrimmer/cookies/
 vinetrimmer/devices/*/*.prd
 vinetrimmer/key_store.db
 
