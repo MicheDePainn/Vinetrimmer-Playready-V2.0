@@ -80,6 +80,7 @@ For Windows users, several batch scripts are provided in the root directory for 
 - **Installation**: Run `install.bat` to set up the environment.
 - **Service Shortcuts**: Use `download.[Service].bat` (e.g., `download.Amazon.bat`) for quick downloads without manual CLI typing.
 - **Help**: Run `help.bat` to see all available commands.
+- **Update Binaries**: Run `update_binaries.bat <URL_or_path_to_zip>` to automatically update the contents of the `binaries/` folder from an archive.
 
 ### Configuration
 
@@ -93,6 +94,7 @@ Vinetrimmer uses a hierarchical configuration system:
 
 A collection of utility scripts is provided in the `scripts/` directory:
 
+- `update_binaries.py`: Script to update and extract new core binaries from a ZIP file (URL or local path) into the `binaries/` directory. Example: `python scripts/update_binaries.py <URL>`
 - `AddKeysToKeyVault.py`: Batch add `KID:KEY` pairs to the SQL database.
 - `MergeKeyStores.py`: Merge multiple key storage databases.
 - `ParsePSSH.py`: Extract metadata and KIDs from Widevine PSSH boxes.
