@@ -1,4 +1,4 @@
-# 🎬 Vinetrimmer Playready 1.0
+# 🎬 Vinetrimmer Playready 2.0
 
 A powerful, high-performance CLI engine for downloading and decrypting Widevine and PlayReady DRM-protected content from various streaming platforms. Designed for research and archival purposes.
 
