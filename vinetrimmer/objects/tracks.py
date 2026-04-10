@@ -1305,8 +1305,12 @@ class Tracks:
 
         muxed_location = os.path.join(config.directories.downloads, os.path.basename(muxed_location))
 
+        mkvmerge_exe = shutil.which("mkvmerge")
+        if not mkvmerge_exe:
+            raise EnvironmentError("mkvmerge executable not found. Make sure MKVToolNix is installed.")
+            
         cl = [
-            "mkvmerge",
+            mkvmerge_exe,
             "--output",
             muxed_location
         ]

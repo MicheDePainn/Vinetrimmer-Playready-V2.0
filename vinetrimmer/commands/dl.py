@@ -669,8 +669,8 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                                 f"label=1:key_id=00000000000000000000000000000000:key={track.key.lower()}",
                             ]),
                             "--temp_dir", directories.temp
-                        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    except subprocess.CalledProcessError: raise RuntimeError("Decryption Failed!")
+                        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    except subprocess.CalledProcessError as e: raise RuntimeError(f"Decryption Failed! Output: {e.stdout}")
                 elif config.decrypter == "mp4decrypt":
                     executable = shutil.which("mp4decrypt")
                     if not executable: raise RuntimeError("Unable to find mp4decrypt binary")

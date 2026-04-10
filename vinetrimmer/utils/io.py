@@ -143,8 +143,9 @@ async def aria2c(uri, out, headers=None, proxy=None):
         "--max-file-not-found", "15",
         "--summary-interval", "0",
         "--file-allocation", "none" if sys.platform == "win32" else "falloc",
-        "--console-log-level", "warn",
-        "--download-result", "hide"
+        "--console-log-level", "error",
+        "--download-result", "hide",
+        "--async-dns", "false"
     ]
 
     for option, value in config.config.aria2c.items():
@@ -176,11 +177,11 @@ async def aria2c(uri, out, headers=None, proxy=None):
                 arguments.extend([pproxy_, "-d"])
                 if segmented:
                     arguments.extend([segments_dir, "-i-"])
-                    proc = await asyncio.create_subprocess_exec(*arguments, stdin=subprocess.PIPE)
+                    proc = await asyncio.create_subprocess_exec(*arguments, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     await proc.communicate(as_list(uri)[0].encode("utf-8"))
                 else:
                     arguments.extend([os.path.dirname(out), uri])
-                    proc = await asyncio.create_subprocess_exec(*arguments)
+                    proc = await asyncio.create_subprocess_exec(*arguments, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     await proc.communicate()
         else:
             arguments.append(proxy)
@@ -191,12 +192,16 @@ async def aria2c(uri, out, headers=None, proxy=None):
                 arguments + ["-d", segments_dir, "-i-"],
                 input=as_list(uri)[0],
                 encoding="utf-8",
-                check=True
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
         else:
             subprocess.run(
                 arguments + ["-d", os.path.dirname(out), uri],
-                check=True
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
     except subprocess.CalledProcessError:
         raise ValueError("Aria2c failed too many times, aborting")
@@ -204,14 +209,22 @@ async def aria2c(uri, out, headers=None, proxy=None):
     if segmented:
         # merge the segments together
         with open(out, "wb") as ofd:
-            for file in sorted(os.listdir(segments_dir)):
-                file = os.path.join(segments_dir, file)
-                with open(file, "rb") as ifd:
+            # Sort numerically instead of alphabetically to prevent 10.mp4 from coming before 2.mp4
+            files = [f for f in os.listdir(segments_dir) if not f.endswith(".aria2")]
+            files.sort(key=lambda f: (0, int(os.path.splitext(f)[0])) if os.path.splitext(f)[0].isdigit() else (1, f))
+            
+            for file in files:
+                file_path = os.path.join(segments_dir, file)
+                with open(file_path, "rb") as ifd:
                     data = ifd.read()
                 # Apple TV+ needs this done to fix audio decryption
                 data = re.sub(b"(tfhd\x00\x02\x00\x1a\x00\x00\x00\x01\x00\x00\x00)\x02", b"\\g<1>\x01", data)
                 ofd.write(data)
-                os.unlink(file)
+                os.unlink(file_path)
+            
+            # Clean up any leftover .aria2 files
+            for file in os.listdir(segments_dir):
+                os.unlink(os.path.join(segments_dir, file))
         os.rmdir(segments_dir)
 
     print()

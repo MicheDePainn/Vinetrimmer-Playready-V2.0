@@ -11,7 +11,7 @@ tag_sd: ''
 arguments: {}
 
 aria2c:
-  file_allocation: 'prealloc'
+  file_allocation: 'none'
   
 
 cdm:

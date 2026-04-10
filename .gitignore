@@ -156,6 +156,8 @@ downloads/
 vinetrimmer/logs/
 vinetrimmer/devices/*/*.prd
 vinetrimmer/key_store.db
+binaries/*
+!binaries/.gitkeep
 
 # OS specific
 Thumbs.db
