@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import functools
 import os
 import re
 import shutil
@@ -13,6 +14,25 @@ import yaml
 from vinetrimmer import config
 from vinetrimmer.utils.collections import as_list
 
+@functools.lru_cache(maxsize=1)
+def get_curl_exe():
+    return shutil.which("curl")
+
+@functools.lru_cache(maxsize=1)
+def get_aria2c_exe():
+    return shutil.which("aria2c") or shutil.which("aria2")
+
+@functools.lru_cache(maxsize=1)
+def get_saldl_exe():
+    return shutil.which("saldl") or shutil.which("saldl-win64") or shutil.which("saldl-win32")
+
+@functools.lru_cache(maxsize=1)
+def get_m3u8dl_exe():
+    return shutil.which("N_m3u8DL-RE") or shutil.which("m3u8DL")
+
+@functools.lru_cache(maxsize=1)
+def get_ffmpeg_exe():
+    return shutil.which("ffmpeg")
 
 def load_yaml(path):
     if not os.path.isfile(path):
@@ -271,11 +291,11 @@ async def saldl(uri, out, headers=None, proxy=None):
     print()
 
 async def m3u8dl(uri: str, out: str, track):
-    executable = shutil.which("N_m3u8DL-RE") or shutil.which("m3u8DL")
+    executable = get_m3u8dl_exe()
     if not executable:
         raise EnvironmentError("N_m3u8DL-RE executable not found...")
     
-    ffmpeg_binary = shutil.which("ffmpeg")
+    ffmpeg_binary = get_ffmpeg_exe()
 
     arguments = [
         executable,

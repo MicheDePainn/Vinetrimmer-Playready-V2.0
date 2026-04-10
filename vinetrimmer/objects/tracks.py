@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import functools
 import logging
 import math
 import os
@@ -27,6 +28,18 @@ from vinetrimmer.utils.subprocess import ffprobe
 #from vinetrimmer.utils.widevine.protos.widevine_pb2 import WidevineCencHeader
 from vinetrimmer.utils.xml import load_xml
 from vinetrimmer.vendor.pymp4.parser import Box, MP4
+
+@functools.lru_cache(maxsize=1)
+def get_ccextractor_exe():
+    return shutil.which("ccextractor") or shutil.which("ccextractorwin")
+
+@functools.lru_cache(maxsize=1)
+def get_mkvmerge_exe():
+    return shutil.which("mkvmerge")
+
+@functools.lru_cache(maxsize=1)
+def get_ffmpeg_exe():
+    return shutil.which("ffmpeg")
 
 CODEC_MAP = {
     # Video
@@ -1305,7 +1318,7 @@ class Tracks:
 
         muxed_location = os.path.join(config.directories.downloads, os.path.basename(muxed_location))
 
-        mkvmerge_exe = shutil.which("mkvmerge")
+        mkvmerge_exe = get_mkvmerge_exe()
         if not mkvmerge_exe:
             raise EnvironmentError("mkvmerge executable not found. Make sure MKVToolNix is installed.")
             

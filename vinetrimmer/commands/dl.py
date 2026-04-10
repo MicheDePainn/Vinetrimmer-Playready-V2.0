@@ -483,7 +483,8 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
             
             return track
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        max_workers = min(32, (os.cpu_count() or 1) + 4)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(process_track_download, track, service_name, service.session, keys): track 
                 for track in title.tracks
@@ -610,7 +611,7 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                             content_keys = [
                                 (x.kid, x.key) for x in ctx.obj.cdm.get_keys(session_id)
                             ] if "common_privacy_cert" in list(ctx.obj.cdm.__dict__.keys()) else [
-                                (str(x.key_id).replace("-", ""), x.key.hex()) for x in ctx.obj.cdm.get_keys(session_id)
+                                (x.key_id.hex, x.key.hex()) for x in ctx.obj.cdm.get_keys(session_id)
                             ]
                             
                             if not content_keys:
@@ -653,13 +654,10 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                 
                 dec = os.path.splitext(track.locate())[0] + ".dec.mp4"
                 if config.decrypter == "packager":
-                    platform = {"win32": "win", "darwin": "osx"}.get(sys.platform, sys.platform)
-                    names = ["shaka-packager", "packager", f"packager-{platform}"]
-                    executable = next((x for x in (shutil.which(x) for x in names) if x), None)
-                    if not executable: raise RuntimeError("Unable to find packager binary")
+                    if not decrypter_executable: raise RuntimeError("Unable to find packager binary")
                     try:
                         subprocess.run([
-                            executable,
+                            decrypter_executable,
                             "input={},stream={},output={}".format(
                                 track.locate(), track.__class__.__name__.lower().replace("track", ""), dec
                             ),
@@ -672,11 +670,10 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                         ], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                     except subprocess.CalledProcessError as e: raise RuntimeError(f"Decryption Failed! Output: {e.stdout}")
                 elif config.decrypter == "mp4decrypt":
-                    executable = shutil.which("mp4decrypt")
-                    if not executable: raise RuntimeError("Unable to find mp4decrypt binary")
+                    if not decrypter_executable: raise RuntimeError("Unable to find mp4decrypt binary")
                     try:
                         subprocess.run([
-                            executable,
+                            decrypter_executable,
                             "--key", f"{track.kid.lower()}:{track.key.lower()}",
                             track.locate(), dec,
                         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -700,7 +697,15 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
 
             return cc_track
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        decrypter_executable = None
+        if config.decrypter == "packager":
+            platform_name = {"win32": "win", "darwin": "osx"}.get(sys.platform, sys.platform)
+            names = ["shaka-packager", "packager", f"packager-{platform_name}"]
+            decrypter_executable = next((x for x in (shutil.which(x) for x in names) if x), None)
+        elif config.decrypter == "mp4decrypt":
+            decrypter_executable = shutil.which("mp4decrypt")
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(process_track_decryption, track): track
                 for track in title.tracks
