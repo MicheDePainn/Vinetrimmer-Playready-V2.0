@@ -14,21 +14,21 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 ## 🛠️ Supported Services
 
-| Service | Alias | Platform URL |
-| :--- | :--- | :--- |
-| **Amazon** | `AMZN` | primevideo.com / amazon.com |
-| **Apple TV+** | `ATVP` | tv.apple.com |
-| **Canal+** | `CNP` | canalplus.com |
-| **Disney+** | `DSNP` | disneyplus.com |
-| **France TV** | `FRTV` | france.tv |
-| **Hulu** | `HULU` | hulu.com |
-| **iTunes** | `iT` | itunes.apple.com |
-| **Max** | `MAX` | max.com |
-| **NowTV** | `NOW` | nowtv.it |
-| **Paramount+** | `PMTP` | paramountplus.com |
-| **Peacock** | `PCOK` | peacocktv.com |
-| **SkyShowtime** | `SKST` | skyshowtime.com |
-| **TimVision** | `TMVS` | timvision.it |
+| Service | Alias | Platform URL | Dégats |
+| :--- | :--- | :--- | :--- |
+| **Amazon** | `AMZN` | primevideo.com / amazon.com | Ban de compte (Rapide) |
+| **Apple TV+** | `ATVP` | tv.apple.com | Ban de compte (Rapide) |
+| **iTunes** | `iT` | itunes.apple.com | Ban de compte (Rapide) |
+| **Canal+** | `CNP` | canalplus.com | Ban IP temporaire / Avertissement |
+| **Disney+** | `DSNP` | disneyplus.com | Ban IP temporaire / Avertissement |
+| **NowTV** | `NOW` | nowtv.it | Ban IP temporaire / Avertissement |
+| **SkyShowtime** | `SKST` | skyshowtime.com | Ban IP temporaire / Avertissement |
+| **TimVision** | `TMVS` | timvision.it | Ban IP temporaire / Avertissement |
+| **Hulu** | `HULU` | hulu.com | Faible / Modéré |
+| **Max** | `MAX` | max.com | Faible / Modéré |
+| **Paramount+** | `PMTP` | paramountplus.com | Faible / Modéré |
+| **Peacock** | `PCOK` | peacocktv.com | Faible / Modéré |
+| **France TV** | `FRTV` | france.tv | Rien |
 
 ## ⚙️ Requirements
 
