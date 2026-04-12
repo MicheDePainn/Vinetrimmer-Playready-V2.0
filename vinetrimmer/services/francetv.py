@@ -1,9 +1,15 @@
 import base64
+import glob
+import os
 import re
+import shutil
+import subprocess
+import types
 
 import click
 from langcodes import Language
 
+from vinetrimmer.config import directories
 from vinetrimmer.objects import Title, Tracks
 from vinetrimmer.services.BaseService import BaseService
 
@@ -41,6 +47,7 @@ class FranceTV(BaseService):
         
         self.video_ids = []
         self.drm_token = None
+        self.manifest_url = None
         
         self.configure()
 
@@ -157,12 +164,12 @@ class FranceTV(BaseService):
         if not manifest_urls:
             raise self.log.exit(" - No DASH manifest found for this video.")
             
-        manifest_url = next((u for u in manifest_urls if "france-domtom" not in u), manifest_urls[0])
-        self.log.info(f" + Manifest URL: {manifest_url}")
+        self.manifest_url = next((u for u in manifest_urls if "france-domtom" not in u), manifest_urls[0])
+        self.log.info(f" + Manifest URL: {self.manifest_url}")
             
         self._fetch_drm_token(title.id)
 
-        tracks = Tracks.from_mpd(url=manifest_url, session=self.session, source=self.ALIASES[0])
+        tracks = Tracks.from_mpd(url=self.manifest_url, session=self.session, source=self.ALIASES[0])
         
         for track in tracks:
             track.needs_proxy = True
@@ -172,15 +179,44 @@ class FranceTV(BaseService):
                 lang_str = str(track.language).lower()
                 if lang_str in ["qsm", "qtz", "qad"]:
                     track.language = Language.get("fr")
-                    # Ajout d'un nom de piste propre pour mkvmerge si besoin
                     if lang_str == "qsm" and track.__class__.__name__ == "TextTrack":
                         track.name = "Sourds et malentendants"
                     elif lang_str in ["qtz", "qad"] and track.__class__.__name__ == "AudioTrack":
                         track.name = "Audiodescription"
             except Exception:
                 pass
+            
+            # France.tv uses wvtt in MP4 for subtitles.
+            if track.__class__.__name__ == "TextTrack":
+                track.download = types.MethodType(self._custom_text_track_download, track)
                 
         return tracks
+
+    def _custom_text_track_download(self, track, out, name=None, headers=None, proxy=None):
+        """Custom TextTrack download using N_m3u8DL-RE to extract wvtt/MP4 to SRT."""
+        tmp = os.path.join(out, f"tmp_sub_{track.id}")
+        os.makedirs(tmp, exist_ok=True)
+        
+        re_exe = os.path.join(directories.package_root.parent, "binaries", "N_m3u8DL-RE.exe")
+        cmd = [re_exe, self.manifest_url, "--sub-only", "--auto-select", "--sub-format", "SRT",
+               "--save-dir", tmp, "--save-name", "sub", "--log-level", "OFF"]
+        cmd.extend([arg for k, v in self.session.headers.items() for arg in ("-H", f"{k}: {v}")])
+        
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            srt = glob.glob(os.path.join(tmp, "*.srt"))
+            if srt:
+                save_path = os.path.join(out, (name or "{type}_{id}_{enc}").format(
+                    type="TextTrack", id=track.id, enc="enc" if track.encrypted else "dec") + ".srt")
+                shutil.move(srt[0], save_path)
+                track._location, track.codec = save_path, "srt"
+                shutil.rmtree(tmp)
+                return save_path
+        except Exception as e:
+            self.log.warning(f" - N_m3u8DL-RE failed: {e}")
+        
+        # Fallback to standard download (likely broken for wvtt/MP4)
+        return track.__class__.__bases__[0].download(track, out, name, headers, proxy)
 
     def _fetch_drm_token(self, video_id):
         try:
@@ -203,14 +239,14 @@ class FranceTV(BaseService):
             "nv-authorizations": self.drm_token,
             "Content-Type": "text/xml",
         }
-        
+
         res = self.session.post(
             self.config["endpoints"]["license"],
             headers=headers,
             data=challenge
         )
-        
+
         if res.status_code != 200:
             raise self.log.exit(f" - License request failed: HTTP {res.status_code} - {res.text}")
-            
+
         return base64.b64encode(res.content).decode()
