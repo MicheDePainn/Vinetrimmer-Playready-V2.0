@@ -2,57 +2,59 @@
 requires = ['poetry-core>=1.0.0']
 build-backend = 'poetry.core.masonry.api'
 
-[tool.poetry]
+[project]
 name = 'vinetrimmer'
 version = '0.1.0'
 description = 'Playready DRM downloader and decrypter'
 authors = []
 
-[tool.poetry.dependencies]
-python = "^3.8"
-appdirs = "^1.4.4"
-beautifulsoup4 = "~4.8.2"
-click = "^8.0.1"
-cffi = "^1.16.0"
-coloredlogs = "^15.0"
-construct = "2.8.8"
-crccheck = "^1.0"
-cryptography = "^43.0.3"
-defusedxml = "^0.7.1"
-ecpy = "^1.2.5"
-httpx = "^0.23.0"
-isodate = "^0.6.1"
-jsonpickle = "^2.0.0"
-langcodes = { extras = ["data"], version = "^3.1.0" }
-lxml = "^5.3.0"
-m3u8 = "^0.9.0"
-marisa-trie = "^1.1.0"
-pproxy = "^2.7.7"
-protobuf = "^3.13.0"
-pycaption = "^2.1.1"
-pycryptodome = "^3.21.0"
-pycryptodomex = "^3.4.3"
-pyhulu = "^1.1.2"
-pymediainfo = "^5.0.3"
-PyMySQL = { extras = ["rsa"], version = "^1.0.2" }
-pysubs2 = "^1.6.1"
-PyYAML = "^6.0.1"
-requests = { extras = ["socks"], version = "2.29.0" }
-tldextract = "^3.1.0"
-toml = "^0.10.2"
-Unidecode = "^1.2.0"
-validators = "^0.18.2"
-websocket-client = "^1.1.0"
-xmltodict = "^0.13.0"
-yt-dlp = "^2022.11.11"
+requires-python = ">=3.8,<3.13"
 
-[tool.poetry.dev-dependencies]
+dependencies = [
+    "appdirs>=1.4.4,<2.0.0",
+    "beautifulsoup4>=4.8.2,<5.0.0",
+    "click>=8.0.1,<9.0.0",
+    "cffi>=1.16.0,<2.0.0",
+    "coloredlogs>=15.0,<16.0",
+    "construct==2.8.8",
+    "crccheck>=1.0,<2.0",
+    "cryptography>=43.0.3,<44.0.0",
+    "defusedxml>=0.7.1,<0.8.0",
+    "ecpy>=1.2.5,<2.0.0",
+    "httpx>=0.23.0,<0.24.0",
+    "isodate>=0.6.1,<0.7.0",
+    "jsonpickle>=2.0.0,<3.0.0",
+    "langcodes[data]>=3.1.0,<4.0.0",
+    "lxml>=5.3.0,<6.0.0",
+    "m3u8>=0.9.0,<1.0.0",
+    "marisa-trie>=1.1.0,<2.0.0",
+    "pproxy>=2.7.7,<3.0.0",
+    "protobuf>=3.13.0,<4.0.0",
+    "pycaption>=2.1.1,<3.0.0",
+    "pycryptodome>=3.21.0,<4.0.0",
+    "pycryptodomex>=3.4.3,<4.0.0",
+    "pyhulu>=1.1.2,<2.0.0",
+    "pymediainfo>=5.0.3,<6.0.0",
+    "PyMySQL[rsa]>=1.0.2,<2.0.0",
+    "pysubs2>=1.6.1,<2.0.0",
+    "PyYAML>=6.0.1,<7.0.0",
+    "requests[socks]==2.29.0",
+    "tldextract>=3.1.0,<4.0.0",
+    "toml>=0.10.2,<0.11.0",
+    "Unidecode>=1.2.0,<2.0.0",
+    "validators>=0.18.2,<0.19.0",
+    "websocket-client>=1.1.0,<2.0.0",
+    "xmltodict>=0.13.0,<0.14.0",
+    "yt-dlp>=2022.11.11,<2023.0.0"
+]
+
+[project.scripts]
+vt = "vinetrimmer.vinetrimmer:main"
+
+[tool.poetry.group.dev.dependencies]
 flake8 = "^3.8.4"
 isort = "^5.9.2"
 pyinstaller = "^4.4"
-
-[tool.poetry.scripts]
-vt = 'vinetrimmer.vinetrimmer:main'
 
 [tool.isort]
 line_length = 120
