@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl -q 720 -al it -sl it TimVision https://www.timvision.it/cinema/cado-dalle-nubi/h/9050506314_92900001
+title Vinetrimmer - TimVision Downloader
+echo ========================================================
+echo                 TimVision Downloader
+echo ========================================================
+echo.
+set /p url="Enter TimVision URL: "
+echo.
+poetry run vt dl TimVision "%url%"
 pause

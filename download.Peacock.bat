@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl  -q 1080 -al en -sl en -w S01E01 Peacock https://www.peacocktv.com/watch/asset/tv/yellowstone/7034893369976297112
+title Vinetrimmer - Peacock Downloader
+echo ========================================================
+echo                 Peacock Downloader
+echo ========================================================
+echo.
+set /p url="Enter Peacock URL: "
+echo.
+poetry run vt dl Peacock "%url%"
 pause

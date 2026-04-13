@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl -q 1080 -al it -sl it -w S01E01 NowTV -m R_182580
+title Vinetrimmer - NowTV Downloader
+echo ========================================================
+echo                 NowTV Downloader
+echo ========================================================
+echo.
+set /p url="Enter NowTV.it ID (e.g. R_182580): "
+echo.
+poetry run vt dl NowTV "%url%"
 pause

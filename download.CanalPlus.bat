@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl -q 720 -al fr -ns -w S01E01 CanalPlus https://www.canalplus.com/series/passenger/h/27411120_50076/resume-casting/
+title Vinetrimmer - CanalPlus Downloader
+echo ========================================================
+echo                 CanalPlus Downloader
+echo ========================================================
+echo.
+set /p url="Enter Canal+ URL: "
+echo.
+poetry run vt dl CanalPlus "%url%"
 pause

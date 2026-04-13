@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl -al en -sl en -w S01E01 AppleTVPlus https://tv.apple.com/us/show/big-beasts/umc.cmc.7d9yulmth1rvkwpij477qsqsk
+title Vinetrimmer - AppleTVPlus Downloader
+echo ========================================================
+echo                 AppleTVPlus Downloader
+echo ========================================================
+echo.
+set /p url="Enter AppleTV+ URL or ID: "
+echo.
+poetry run vt dl AppleTVPlus "%url%"
 pause

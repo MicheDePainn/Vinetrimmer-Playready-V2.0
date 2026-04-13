@@ -1,3 +1,10 @@
 @echo off
-poetry run vt dl -al hi,en,te,ta -sl en Amazon https://www.primevideo.com/detail/0RCUS5J37XM4TBACJ86NPO5A39
+title Vinetrimmer - Amazon Downloader
+echo ========================================================
+echo                 Amazon Downloader
+echo ========================================================
+echo.
+set /p url="Enter Amazon URL or ASIN: "
+echo.
+poetry run vt dl Amazon "%url%"
 pause
