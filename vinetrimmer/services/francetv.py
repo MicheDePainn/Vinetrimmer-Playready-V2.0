@@ -5,13 +5,16 @@ import re
 import shutil
 import subprocess
 import types
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 import click
 from langcodes import Language
 
 from vinetrimmer.config import directories
-from vinetrimmer.objects import Title, Tracks
+from vinetrimmer.objects import Title, Tracks, AudioTrack, TextTrack
 from vinetrimmer.services.BaseService import BaseService
+from vinetrimmer.utils.io import get_m3u8dl_exe
 
 
 class FranceTV(BaseService):
@@ -46,7 +49,8 @@ class FranceTV(BaseService):
         self.movie = movie
         
         self.video_ids = []
-        self.drm_token = None
+        self._drm_token_cache = {}  # {video_id: token}
+        self._lock = Lock()
         self.manifest_url = None
         
         self.configure()
@@ -80,7 +84,8 @@ class FranceTV(BaseService):
 
     def get_titles(self):
         titles = []
-        for vid in self.video_ids:
+
+        def get_title_metadata(vid):
             url = self.config["endpoints"]["video"].format(video_id=vid)
             params = {
                 "device_type": "desktop",
@@ -89,15 +94,14 @@ class FranceTV(BaseService):
                 "capabilities": "drm",
                 "player_version": "5.140.0"
             }
-            
             try:
                 res = self.session.get(url, params=params)
                 if res.status_code != 200:
-                    continue
+                    return None
                 
                 data = res.json()
                 if data.get("code") not in (None, 200):
-                    continue
+                    return None
 
                 meta = data.get("meta", {})
                 title_str = meta.get("title", "Unknown Title")
@@ -106,14 +110,15 @@ class FranceTV(BaseService):
                 
                 season, episode = 0, 0
                 if pre_title:
-                    m = re.search(r'S(\d+)\s*E(\d+)', pre_title)
+                    # Robust parsing for S1 E1, S01E01, etc.
+                    m = re.search(r'S(\d+)\s*E(\d+)', pre_title, re.IGNORECASE)
                     if m:
                         season = int(m.group(1))
                         episode = int(m.group(2))
                 
-                is_movie = self.movie or episode == 0
+                is_movie = self.movie or (season == 0 and episode == 0)
                 
-                titles.append(Title(
+                return Title(
                     id_=vid,
                     type_=Title.Types.MOVIE if is_movie else Title.Types.TV,
                     name=title_str,
@@ -124,9 +129,17 @@ class FranceTV(BaseService):
                     original_lang="fr",
                     source=self.ALIASES[0],
                     service_data=data
-                ))
-            except Exception:
-                pass
+                )
+            except Exception as e:
+                self.log.debug(f"Failed to fetch metadata for {vid}: {e}")
+                return None
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(get_title_metadata, vid) for vid in self.video_ids]
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    titles.append(result)
         
         if not titles:
             raise self.log.exit(" - No valid titles could be retrieved from the found IDs.")
@@ -167,6 +180,7 @@ class FranceTV(BaseService):
         self.manifest_url = next((u for u in manifest_urls if "france-domtom" not in u), manifest_urls[0])
         self.log.info(f" + Manifest URL: {self.manifest_url}")
             
+        # Initial token fetch
         self._fetch_drm_token(title.id)
 
         tracks = Tracks.from_mpd(url=self.manifest_url, session=self.session, source=self.ALIASES[0])
@@ -177,17 +191,21 @@ class FranceTV(BaseService):
             # Conversion des codes langues non-standards de France.tv
             try:
                 lang_str = str(track.language).lower()
-                if lang_str in ["qsm", "qtz", "qad"]:
+                # qsm: Sourds et malentendants (SDH)
+                # qtz/qad: Audiodescription
+                if lang_str == "qsm":
                     track.language = Language.get("fr")
-                    if lang_str == "qsm" and track.__class__.__name__ == "TextTrack":
-                        track.name = "Sourds et malentendants"
-                    elif lang_str in ["qtz", "qad"] and track.__class__.__name__ == "AudioTrack":
-                        track.name = "Audiodescription"
-            except Exception:
-                pass
+                    if isinstance(track, TextTrack):
+                        track.sdh = True
+                elif lang_str in ["qtz", "qad"]:
+                    track.language = Language.get("fr")
+                    if isinstance(track, AudioTrack):
+                        track.descriptive = True
+            except Exception as e:
+                self.log.debug(f"Language conversion failed for {track.id}: {e}")
             
             # France.tv uses wvtt in MP4 for subtitles.
-            if track.__class__.__name__ == "TextTrack":
+            if isinstance(track, TextTrack):
                 track.download = types.MethodType(self._custom_text_track_download, track)
                 
         return tracks
@@ -197,46 +215,79 @@ class FranceTV(BaseService):
         tmp = os.path.join(out, f"tmp_sub_{track.id}")
         os.makedirs(tmp, exist_ok=True)
         
-        re_exe = os.path.join(directories.package_root.parent, "binaries", "N_m3u8DL-RE.exe")
-        cmd = [re_exe, self.manifest_url, "--sub-only", "--auto-select", "--sub-format", "SRT",
-               "--save-dir", tmp, "--save-name", "sub", "--log-level", "OFF"]
-        cmd.extend([arg for k, v in self.session.headers.items() for arg in ("-H", f"{k}: {v}")])
+        re_exe = get_m3u8dl_exe()
+        if not re_exe:
+            self.log.warning(" - N_m3u8DL-RE not found, falling back to standard download")
+            return track.__class__.__bases__[0].download(track, out, name, headers, proxy)
+
+        cmd = [
+            re_exe, self.manifest_url,
+            "--sub-only",
+            "--auto-select",
+            "--sub-format", "SRT",
+            "--save-dir", tmp,
+            "--save-name", "sub",
+            "--log-level", "OFF"
+        ]
+        
+        # Add proxy if needed
+        if proxy:
+            cmd.extend(["--proxy", proxy])
+
+        # Add headers from current session
+        for k, v in self.session.headers.items():
+            cmd.extend(["-H", f"{k}: {v}"])
         
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            srt = glob.glob(os.path.join(tmp, "*.srt"))
-            if srt:
+            srt_files = glob.glob(os.path.join(tmp, "*.srt"))
+            if srt_files:
+                # Use the largest SRT file or first one found
+                srt_files.sort(key=os.path.getsize, reverse=True)
                 save_path = os.path.join(out, (name or "{type}_{id}_{enc}").format(
                     type="TextTrack", id=track.id, enc="enc" if track.encrypted else "dec") + ".srt")
-                shutil.move(srt[0], save_path)
+                shutil.move(srt_files[0], save_path)
                 track._location, track.codec = save_path, "srt"
-                shutil.rmtree(tmp)
                 return save_path
         except Exception as e:
             self.log.warning(f" - N_m3u8DL-RE failed: {e}")
+        finally:
+            if os.path.exists(tmp):
+                shutil.rmtree(tmp, ignore_errors=True)
         
         # Fallback to standard download (likely broken for wvtt/MP4)
         return track.__class__.__bases__[0].download(track, out, name, headers, proxy)
 
     def _fetch_drm_token(self, video_id):
-        try:
-            res = self.session.post(
-                self.config["endpoints"]["drm_token"],
-                params={"v": "2"},
-                json={"id": video_id, "drm_type": "playready", "license_type": "online"}
-            )
-            if res.status_code == 200:
-                self.drm_token = res.json().get("token")
-            else:
-                self.log.debug(f"DRM Token API status: {res.status_code}")
-        except Exception as e:
-            self.log.warning(f" - Failed to fetch DRM token: {e}")
+        with self._lock:
+            if video_id in self._drm_token_cache:
+                return self._drm_token_cache[video_id]
+
+            try:
+                res = self.session.post(
+                    self.config["endpoints"]["drm_token"],
+                    params={"v": "2"},
+                    json={"id": video_id, "drm_type": "playready", "license_type": "online"}
+                )
+                if res.status_code == 200:
+                    token = res.json().get("token")
+                    if token:
+                        self._drm_token_cache[video_id] = token
+                        return token
+                else:
+                    self.log.debug(f"DRM Token API status: {res.status_code}")
+            except Exception as e:
+                self.log.warning(f" - Failed to fetch DRM token: {e}")
+
+            return None
 
     def license(self, challenge, title, track, **kwargs):
-        self._fetch_drm_token(title.id)
+        token = self._fetch_drm_token(title.id)
+        if not token:
+            raise self.log.exit(" - Failed to obtain DRM token for license request.")
 
         headers = {
-            "nv-authorizations": self.drm_token,
+            "nv-authorizations": token,
             "Content-Type": "text/xml",
         }
 
