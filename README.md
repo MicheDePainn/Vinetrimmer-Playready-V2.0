@@ -104,6 +104,11 @@ A collection of utility scripts is provided in the `scripts/` directory:
 - `VMPBlobGen.py`: Generate VMP (Verified Media Path) blobs for Chrome CDM.
 - `ParseClientID.py`: Inspect Widevine Client ID blobs.
 
+## 🗺️ Roadmap (Améliorations Prévues)
+
+- [ ] **Validation forte avec Pydantic** : Remplacement des dictionnaires par des modèles typés pour les configurations et réponses API.
+- [ ] **Asynchronisme** : Migration vers `asyncio` pour les requêtes HTTP afin d'améliorer considérablement les performances.
+
 ## 🎬 Disclaimer
 
 This project is intended for educational purposes and interoperability research. The authors do not encourage or condone the use of this software for piracy or any illegal activities. Users are responsible for complying with the terms of service of any streaming platforms they access.

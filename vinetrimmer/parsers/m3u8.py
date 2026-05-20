@@ -7,7 +7,7 @@ from vinetrimmer.utils import Cdm
 from vinetrimmer.vendor.pymp4.parser import Box
 
 
-def parse(master, source=None):
+def parse(master, source: str | None = None) -> Tracks:
     """
     Convert a Variant Playlist M3U8 document to a Tracks object with Video, Audio and
     Subtitle Track objects. This is not an M3U8 parser, use https://github.com/globocom/m3u8

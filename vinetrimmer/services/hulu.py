@@ -7,7 +7,7 @@ from langcodes import Language
 
 from vinetrimmer.objects import TextTrack, Title, Tracks
 from vinetrimmer.services.BaseService import BaseService
-from vinetrimmer.utils.pyhulu import Device, HuluClient
+from pyhulu import Device, HuluClient
 
 
 class Hulu(BaseService):

@@ -22,7 +22,7 @@ from vinetrimmer.utils.xml import load_xml
 from vinetrimmer.vendor.pymp4.parser import Box
 
 
-def parse(*, url=None, data=None, source, session=None, downloader=None):
+def parse(*, url: str | None = None, data: str | None = None, source: str, session=None, downloader: str | None = None) -> Tracks:
     """
     Convert an MPEG-DASH MPD (Media Presentation Description) document to a Tracks object
     with video, audio and subtitle track objects where available.
@@ -278,120 +278,122 @@ def parse(*, url=None, data=None, source, session=None, downloader=None):
                 )
                 track_id = md5(track_id.encode()).hexdigest()
 
-                if content_type == "video":
-                    tracks.append(VideoTrack(
-                        id_=track_id,
-                        source=source,
-                        url=track_url,
-                        # metadata
-                        codec=(codecs or "").split(".")[0],
-                        language=track_lang,
-                        bitrate=rep.get("bandwidth"),
-                        width=int(rep.get("width") or 0) or adaptation_set.get("width"),
-                        height=int(rep.get("height") or 0) or adaptation_set.get("height"),
-                        fps=rep.get("frameRate") or adaptation_set.get("frameRate"),
-                        hdr10=any(
-                            x.get("schemeIdUri") == "urn:mpeg:mpegB:cicp:TransferCharacteristics"
-                            and x.get("value") == "16"  # PQ
-                            for x in adaptation_set.findall("SupplementalProperty")
-                        ) or any(
-                            x.get("schemeIdUri") == "http://dashif.org/metadata/hdr"
-                            and x.get("value") == "SMPTE2094-40"  # HDR10+
-                            for x in adaptation_set.findall("SupplementalProperty")
-                        ),
-                        hlg=any(
-                            x.get("schemeIdUri") == "urn:mpeg:mpegB:cicp:TransferCharacteristics"
-                            and x.get("value") == "18"  # HLG
-                            for x in adaptation_set.findall("SupplementalProperty")
-                        ),
-                        dv=codecs and codecs.startswith(("dvhe", "dvh1")),
-                        # switches/options
-                        descriptor=Track.Descriptor.MPD,
-                        # decryption
-                        encrypted=encrypted,
-                        pssh=pssh,
-                        kid=kid,
-                        # extra
-                        extra=(rep, adaptation_set)
-                    ))
-                elif content_type == "audio":
-                    tracks.append(AudioTrack(
-                        id_=track_id,
-                        source=source,
-                        url=track_url,
-                        # metadata
-                        codec=(codecs or "").split(".")[0],
-                        language=track_lang,
-                        bitrate=rep.get("bandwidth"),
-                        channels=next(iter(
-                            rep.xpath("AudioChannelConfiguration/@value")
-                            or adaptation_set.xpath("AudioChannelConfiguration/@value")
-                        ), None),
-                        descriptive=any(
-                            x.get("schemeIdUri") == "urn:mpeg:dash:role:2011" and x.get("value") == "description"
-                            for x in adaptation_set.findall("Accessibility")
-                        ),
-                        # switches/options
-                        descriptor=Track.Descriptor.MPD,
-                        # decryption
-                        encrypted=encrypted,
-                        pssh=pssh,
-                        kid=kid,
-                        # extra
-                        extra=(rep, adaptation_set)
-                    ))
-                elif content_type == "text":
-                    if source == 'HMAX':
-                        # HMAX SUBS
-                        segment_template = rep.find("SegmentTemplate")
-
-                        sub_path_url = rep.findtext("BaseURL")
-                        if not sub_path_url:
-                            sub_path_url = segment_template.get('media')
-                       
-                        try:
-                            path = re.search(r'(t\/.+?\/)t', sub_path_url).group(1)
-                        except AttributeError:
-                            path = 't/sub/'
-                        
-                        is_normal = any(x.get("value") == "subtitle" for x in adaptation_set.findall("Role"))
-                        is_sdh = any(x.get("value") == "caption" for x in adaptation_set.findall("Role"))
-                        is_forced = any(x.get("value") == "forced-subtitle" for x in adaptation_set.findall("Role"))
-
-                        if is_normal:
-                            track_url = [base_url + path + adaptation_set.get('lang') + '_sub.vtt']
-                        elif is_sdh:
-                            track_url = [base_url + path + adaptation_set.get('lang') + '_sdh.vtt']
-                        elif is_forced:
-                            track_url = [base_url + path + adaptation_set.get('lang') + '_forced.vtt']
-
-                        tracks.append(TextTrack(
+                match content_type:
+                    case "video":
+                        tracks.append(VideoTrack(
                             id_=track_id,
                             source=source,
                             url=track_url,
                             # metadata
                             codec=(codecs or "").split(".")[0],
                             language=track_lang,
-                            forced=is_forced,
-                            sdh=is_sdh,
+                            bitrate=rep.get("bandwidth"),
+                            width=int(rep.get("width") or 0) or adaptation_set.get("width"),
+                            height=int(rep.get("height") or 0) or adaptation_set.get("height"),
+                            fps=rep.get("frameRate") or adaptation_set.get("frameRate"),
+                            hdr10=any(
+                                x.get("schemeIdUri") == "urn:mpeg:mpegB:cicp:TransferCharacteristics"
+                                and x.get("value") == "16"  # PQ
+                                for x in adaptation_set.findall("SupplementalProperty")
+                            ) or any(
+                                x.get("schemeIdUri") == "http://dashif.org/metadata/hdr"
+                                and x.get("value") == "SMPTE2094-40"  # HDR10+
+                                for x in adaptation_set.findall("SupplementalProperty")
+                            ),
+                            hlg=any(
+                                x.get("schemeIdUri") == "urn:mpeg:mpegB:cicp:TransferCharacteristics"
+                                and x.get("value") == "18"  # HLG
+                                for x in adaptation_set.findall("SupplementalProperty")
+                            ),
+                            dv=codecs and codecs.startswith(("dvhe", "dvh1")),
                             # switches/options
                             descriptor=Track.Descriptor.MPD,
+                            # decryption
+                            encrypted=encrypted,
+                            pssh=pssh,
+                            kid=kid,
                             # extra
                             extra=(rep, adaptation_set)
                         ))
-                    else:
-                        tracks.append(TextTrack(
+                    case "audio":
+                        tracks.append(AudioTrack(
                             id_=track_id,
                             source=source,
                             url=track_url,
                             # metadata
                             codec=(codecs or "").split(".")[0],
                             language=track_lang,
+                            bitrate=rep.get("bandwidth"),
+                            channels=next(iter(
+                                rep.xpath("AudioChannelConfiguration/@value")
+                                or adaptation_set.xpath("AudioChannelConfiguration/@value")
+                            ), None),
+                            descriptive=any(
+                                x.get("schemeIdUri") == "urn:mpeg:dash:role:2011" and x.get("value") == "description"
+                                for x in adaptation_set.findall("Accessibility")
+                            ),
                             # switches/options
                             descriptor=Track.Descriptor.MPD,
+                            # decryption
+                            encrypted=encrypted,
+                            pssh=pssh,
+                            kid=kid,
                             # extra
                             extra=(rep, adaptation_set)
                         ))
+                    case "text":
+                        match source:
+                            case 'HMAX':
+                                # HMAX SUBS
+                                segment_template = rep.find("SegmentTemplate")
+
+                                sub_path_url = rep.findtext("BaseURL")
+                                if not sub_path_url:
+                                    sub_path_url = segment_template.get('media')
+                               
+                                try:
+                                    path = re.search(r'(t\/.+?\/)t', sub_path_url).group(1)
+                                except AttributeError:
+                                    path = 't/sub/'
+                                
+                                is_normal = any(x.get("value") == "subtitle" for x in adaptation_set.findall("Role"))
+                                is_sdh = any(x.get("value") == "caption" for x in adaptation_set.findall("Role"))
+                                is_forced = any(x.get("value") == "forced-subtitle" for x in adaptation_set.findall("Role"))
+
+                                if is_normal:
+                                    track_url = [base_url + path + adaptation_set.get('lang') + '_sub.vtt']
+                                elif is_sdh:
+                                    track_url = [base_url + path + adaptation_set.get('lang') + '_sdh.vtt']
+                                elif is_forced:
+                                    track_url = [base_url + path + adaptation_set.get('lang') + '_forced.vtt']
+
+                                tracks.append(TextTrack(
+                                    id_=track_id,
+                                    source=source,
+                                    url=track_url,
+                                    # metadata
+                                    codec=(codecs or "").split(".")[0],
+                                    language=track_lang,
+                                    forced=is_forced,
+                                    sdh=is_sdh,
+                                    # switches/options
+                                    descriptor=Track.Descriptor.MPD,
+                                    # extra
+                                    extra=(rep, adaptation_set)
+                                ))
+                            case _:
+                                tracks.append(TextTrack(
+                                    id_=track_id,
+                                    source=source,
+                                    url=track_url,
+                                    # metadata
+                                    codec=(codecs or "").split(".")[0],
+                                    language=track_lang,
+                                    # switches/options
+                                    descriptor=Track.Descriptor.MPD,
+                                    # extra
+                                    extra=(rep, adaptation_set)
+                                ))
 
     # r = session.get(url=url)
     # mpd = json.loads(json.dumps(xmltodict.parse(r.text)))

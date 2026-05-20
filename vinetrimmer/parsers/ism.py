@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ElementTREE
 from vinetrimmer.objects import Track, Tracks, VideoTrack
 
 
-def parse(url: str, source: str, session):
+def parse(url: str, source: str, session) -> Tracks:
     tracks = Tracks()
 
     req = session.get(url=url)
