@@ -1,8 +1,8 @@
-# 🎬 Vinetrimmer Playready 2.0
+# Vinetrimmer Playready 2.0
 
 A powerful, high-performance CLI engine for downloading and decrypting Widevine and PlayReady DRM-protected content from various streaming platforms. Designed for research and archival purposes.
 
-## 🚀 Key Features
+## Key Features
 
 - **PlayReady & Widevine Support**: Seamlessly handles PlayReady (SL2000/SL3000) and Widevine (L1/L3) decryption.
 - **High Performance**: Parallelized track downloading and decryption using multi-threading for maximum speed.
@@ -12,7 +12,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 - **Advanced Muxing**: Automatic track merging into MKV containers with proper metadata and chapter support.
 - **Proxy Integration**: Built-in support for custom HTTP/HTTPS proxies and NordVPN integration.
 
-## 🛠️ Supported Services
+## Supported Services
 
 | Service | Alias | Platform URL | Dégats (Bans) |
 | :--- | :--- | :--- | :--- |
@@ -30,9 +30,9 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 | **Peacock** | `PCOK` | peacocktv.com | Faible / Modéré |
 | **France TV** | `FRTV` | france.tv | Aucun |
 
-## ⚙️ Requirements
+## Requirements
 
-- **Python**: 3.8 to 3.11 recommended.
+- **Python**: 3.10 - 3.14 recommended.
 - **Package Manager**: [Poetry](https://python-poetry.org/) recommended.
 - **Core Binaries**: (Placed in `binaries/` or system PATH via `install_binaries.py`)
   - `aria2c`: High-speed segmented downloading.
@@ -42,7 +42,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
   - `ccextractor`: Captions extraction.
   - `N_m3u8DL-RE`: HLS/DASH manifest handling.
 
-## 🚀 Installation
+## Installation
 
 1. Clone or download the repository.
 2. Ensure you have Microsoft Visual C++ Redistributable installed.
@@ -54,7 +54,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
    python install_binaries.py
    ```
 
-## 📖 Usage
+## Usage
 
 The main command is `vt dl`. You can use it by calling `poetry run vt dl`.
 
@@ -93,7 +93,7 @@ Vinetrimmer uses a hierarchical configuration system:
 
 See `How.to.use.txt` for more detailed instructions on cookies, credentials, and CDM setup.
 
-## 🔧 Maintenance Scripts
+## Maintenance Scripts
 
 A collection of utility scripts is provided in the `scripts/` directory:
 
@@ -104,11 +104,11 @@ A collection of utility scripts is provided in the `scripts/` directory:
 - `VMPBlobGen.py`: Generate VMP (Verified Media Path) blobs for Chrome CDM.
 - `ParseClientID.py`: Inspect Widevine Client ID blobs.
 
-## 🗺️ Roadmap (Améliorations Prévues)
+## Roadmap (Améliorations Prévues)
 
 - [ ] **Validation forte avec Pydantic** : Remplacement des dictionnaires par des modèles typés pour les configurations et réponses API.
 - [ ] **Asynchronisme** : Migration vers `asyncio` pour les requêtes HTTP afin d'améliorer considérablement les performances.
 
-## 🎬 Disclaimer
+## Disclaimer
 
 This project is intended for educational purposes and interoperability research. The authors do not encourage or condone the use of this software for piracy or any illegal activities. Users are responsible for complying with the terms of service of any streaming platforms they access.
