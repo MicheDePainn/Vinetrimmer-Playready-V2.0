@@ -1,8 +1,8 @@
 # Vinetrimmer Playready 2.0
 
-![Platform](https://img.shields.io/badge/platform-Windows%20Only-blue)
-![Python Version](https://img.shields.io/badge/python-3.10%20--%203.14-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)
+![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-44CC11)
 
 A powerful, high-performance CLI engine for downloading and decrypting Widevine and PlayReady DRM-protected content from various streaming platforms. Designed for research and archival purposes.
 
@@ -56,7 +56,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 > This project is currently compatible with **Windows environments only**.
 
 - **Operating System**: Windows 10 / 11
-- **Python**: 3.10 - 3.14 recommended.
+- **Python**: 3.10 - 3.13
 - **Package Manager**: [Poetry](https://python-poetry.org/) recommended.
 - **Core Binaries**: (Must be placed in `binaries/` or added to system PATH via `install_binaries.py`)
   - `aria2c`: High-speed segmented downloading.
@@ -115,7 +115,7 @@ Several batch scripts are provided in the root directory for common tasks:
 ### Configuration
 
 Vinetrimmer uses a hierarchical configuration system:
-- **Root Config**: `vinetrimmerinetrimmer.yml` defines global settings (CDMs, paths, credentials, proxy).
+- **Root Config**: `vinetrimmer\vinetrimmer.yml` defines global settings (CDMs, paths, credentials, proxy).
 - **Service Configs**: `vinetrimmer\config\services\*.yml` define platform-specific endpoints and options.
 - **Cookies**: Place Netscape-formatted cookies in `vinetrimmer\cookies\[service]\default.txt`.
 - **Devices (CDMs)**: CDM device files (PRD, bgroupcert/zgpriv, etc.) go into `vinetrimmer\devices\`.
