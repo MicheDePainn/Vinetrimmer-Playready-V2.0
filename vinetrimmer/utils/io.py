@@ -154,7 +154,7 @@ async def aria2c(uri, out, headers=None, proxy=None):
         "--remote-time",  # Retrieve timestamp of the remote file from the and apply if available
         "-o", os.path.basename(out),  # The file name of the downloaded file, relative to -d
         "-x", "16",  # The maximum number of connections to one server for each download
-        "-j", "16",  # The maximum number of parallel downloads for every static (HTTP/FTP) URL
+        "-j", "128" if isinstance(uri, list) else "16",  # The maximum number of parallel downloads for every static (HTTP/FTP) URL
         "-s", "16",  # Download a file using N connections.
         "--allow-overwrite=true",
         "--auto-file-renaming=false",

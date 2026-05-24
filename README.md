@@ -70,7 +70,10 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 ## Installation
 
-1. Clone or download the repository.
+1. Clone the repository using the following command (the `--depth 1` argument is optional but highly recommended to save a lot of time):
+   ```bash
+   git clone https://github.com/MicheDePainn/Vinetrimmer-Playready-V2.0.git --depth 1
+   ```
 2. Ensure you have the **Microsoft Visual C++ Redistributable** installed.
 3. Double-click on `install.bat`.
    
@@ -134,6 +137,7 @@ A collection of utility scripts is provided in the `scripts/` directory:
 - `MakeWVD.py`: Convert folder-based CDM data into Vinetrimmer WVD structs.
 - `VMPBlobGen.py`: Generate VMP (Verified Media Path) blobs for Chrome CDM.
 - `ParseClientID.py`: Inspect Widevine Client ID blobs.
+- `benchmark.py`: Test and compare download speeds of the engine (located at root).
 
 ---
 
