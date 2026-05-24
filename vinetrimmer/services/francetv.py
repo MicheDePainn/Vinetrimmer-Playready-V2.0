@@ -12,7 +12,7 @@ import click
 from langcodes import Language
 
 from vinetrimmer.config import directories
-from vinetrimmer.objects import Title, Tracks, AudioTrack, TextTrack
+from vinetrimmer.objects import Title, Tracks, AudioTrack, TextTrack, MenuTrack
 from vinetrimmer.services.BaseService import BaseService
 from vinetrimmer.utils.io import get_m3u8dl_exe
 
@@ -165,6 +165,45 @@ class FranceTV(BaseService):
             raise self.log.exit(" - No valid titles could be retrieved from the found IDs.")
             
         return titles
+
+    def get_chapters(self, title):
+        chapters = []
+        video_data = title.service_data.get("video", {})
+        
+        events = {
+            "previously": "Previously",
+            "skip_intro": "Intro",
+            "coming_next": "Next",
+            "closing_credits": "Credits"
+        }
+
+        chapter_times = []
+        
+        for key, name in events.items():
+            data = video_data.get(key)
+            if data and isinstance(data, dict):
+                timecode = data.get("timecode")
+                if isinstance(timecode, (int, float)):
+                    chapter_times.append((timecode, name))
+                    duration = data.get("duration")
+                    if isinstance(duration, (int, float)):
+                        chapter_times.append((timecode + duration, f"{name} End"))
+
+        if not chapter_times:
+            return chapters
+
+        chapter_times = sorted(list(set(chapter_times)), key=lambda x: x[0])
+
+        for number, (timecode, title_name) in enumerate(chapter_times, start=1):
+            chapters.append(
+                MenuTrack(
+                    number=number,
+                    title=title_name,
+                    timecode=MenuTrack.format_duration(timecode)
+                )
+            )
+
+        return chapters
 
     def get_tracks(self, title):
         video_data = title.service_data.get("video", {})
