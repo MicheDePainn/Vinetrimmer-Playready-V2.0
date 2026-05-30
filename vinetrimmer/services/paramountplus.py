@@ -394,17 +394,21 @@ class ParamountPlus(BaseService):
         return cookies
     
     def get_barrear(self, content_id):
-        try:  
-            res = self.session.get(url=self.config[self.region]["barrearUrl"], params={"contentId": content_id})
-            res.raise_for_status()
-        except requests.HTTPError as e:
-            if e.response.status_code == 401:
-                self.log.warning("Received a 401 error, deleting cached cookies")
-                self.session.headers.clear()
-                self.session.params = {}
-                self.configure()
-                return self.get_barrear(content_id)
-            raise
+        for _ in range(3):
+            try:  
+                res = self.session.get(url=self.config[self.region]["barrearUrl"], params={"contentId": content_id})
+                res.raise_for_status()
+                break
+            except requests.HTTPError as e:
+                if e.response.status_code == 401:
+                    self.log.warning("Received a 401 error, re-authenticating")
+                    self.session.headers.clear()
+                    self.session.params = {}
+                    self.configure()
+                    continue
+                raise
+        else:
+            raise self.log.exit("Unable to get barrear after multiple attempts")
         
         res = res.json()
 
