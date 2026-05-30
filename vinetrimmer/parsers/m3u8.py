@@ -1,10 +1,7 @@
-import base64
 import re
 from hashlib import md5
 
 from vinetrimmer.objects import AudioTrack, TextTrack, Track, Tracks, VideoTrack
-from vinetrimmer.utils import Cdm
-from vinetrimmer.vendor.pymp4.parser import Box
 
 
 def parse(master, source: str | None = None) -> Tracks:
@@ -38,20 +35,6 @@ def parse(master, source: str | None = None) -> Tracks:
     # doesn't include EXT-X-SESSION-KEYS which is whats used for variant playlist M3U8.
     keys = [x.uri for x in master.session_keys if x.keyformat.lower() == "com.microsoft.playready"]
     pssh = keys[0].split(",")[-1] if keys else None
-    # if pssh:
-        # pssh = base64.b64decode(pssh)
-        # # noinspection PyBroadException
-        # try:
-            # pssh = Box.parse(pssh)
-            
-        # except Exception:
-            # pssh = Box.parse(Box.build(dict(
-                # type=b"pssh",
-                # version=0,  # can only assume version & flag are 0
-                # flags=0,
-                # system_ID=Cdm.uuid,
-                # init_data=pssh
-            # )))
 
     return Tracks(
         # VIDEO

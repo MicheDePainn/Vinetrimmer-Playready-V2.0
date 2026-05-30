@@ -95,7 +95,7 @@ class DisneyPlus(BaseService):
         
         if "errors" in title_metadata["data"]:
             errors = title_metadata["data"]["errors"][0]["description"]
-            self.log.exit(f" - {errors}")
+            raise self.log.exit(f" - {errors}")
         
         if self.movie:
             title = title_metadata["data"]["page"]

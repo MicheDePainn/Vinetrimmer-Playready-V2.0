@@ -8,6 +8,7 @@ import subprocess
 import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 from zlib import crc32
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -24,14 +25,14 @@ from vinetrimmer import services
 from vinetrimmer.config import Config, config, credentials, directories, filenames
 from vinetrimmer.objects import AudioTrack, Credential, TextTrack, Title, Titles, VideoTrack
 from vinetrimmer.objects.vaults import InsertResult, Vault, Vaults
-from vinetrimmer.utils import Cdm, is_close_match
+from vinetrimmer.utils import is_close_match
 from vinetrimmer.utils.click import (AliasedGroup, ContextData, acodec_param, language_param, quality_param,
                                      range_param, vcodec_param, wanted_param)
 from vinetrimmer.utils.collections import as_list, merge_dict
 from vinetrimmer.utils.io import load_yaml
 from vinetrimmer.vendor.pymp4.parser import Box
 
-from vinetrimmer.utils.playready.cdm import Cdm
+from vinetrimmer.utils.playready.cdm import Cdm as PlayReadyCdm
 from vinetrimmer.utils.playready.device import Device
 from vinetrimmer.utils.playready.pssh import PSSH
 from vinetrimmer.utils.playready.ecc_key import ECCKey
@@ -168,12 +169,13 @@ def get_cookie_jar(service, profile):
     if not os.path.isfile(cookie_file):
         cookie_file = os.path.join(directories.cookies, service, f"{profile}.txt")
     if os.path.isfile(cookie_file):
-        cookie_jar = MozillaCookieJar(cookie_file)
-        with open(cookie_file, "r+", encoding="utf-8") as fd:
-            unescaped = html.unescape(fd.read())
-            fd.seek(0)
-            fd.truncate()
-            fd.write(unescaped)
+        with open(cookie_file, encoding="utf-8") as fd:
+            content = html.unescape(fd.read())
+        temp_cookie = os.path.join(directories.temp, f"cookies_{service}_{profile}.txt")
+        os.makedirs(os.path.dirname(temp_cookie), exist_ok=True)
+        with open(temp_cookie, "w", encoding="utf-8") as fd:
+            fd.write(content)
+        cookie_jar = MozillaCookieJar(temp_cookie)
         cookie_jar.load(ignore_discard=True, ignore_expires=True)
         return cookie_jar
     return None
@@ -288,11 +290,9 @@ def dl(ctx, profile, cdm, *_, **__):
         device = get_cdm(log, service, profile, cdm)
     except ValueError as e:
         raise log.exit(f" - {e}")
-    device_name = device.get_name() #if "sl3000" or "sl2000" in device.get_name() else device.system_id
+    device_name = device.get_name()
     log.info(f" + Loaded {device.__class__.__name__}: {device_name} (SL{device.security_level})")
-    cdm = Cdm.from_device(device)
-    cdm.device = device
-    cdm.device.type = 'Device.Types.PLAYREADY'
+    cdm = PlayReadyCdm.from_device(device)
 
     if profile:
         cookies = get_cookie_jar(service, profile)
@@ -483,8 +483,8 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
             
             return track
 
-        max_workers = min(32, (os.cpu_count() or 1) + 4)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        io_workers = min(16, (os.cpu_count() or 1) * 4)
+        with ThreadPoolExecutor(max_workers=io_workers) as executor:
             futures = {
                 executor.submit(process_track_download, track, service_name, service.session, keys): track 
                 for track in title.tracks
@@ -505,7 +505,6 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                     raise log.exit(f" - Error processing {track.id}: {exc}")
 
         # --- PHASE 2: PARALLEL PROCESSING (Decrypt, Repack, CCExtractor) ---
-        from threading import Lock
         cdm_lock = Lock()
         skip_title = False
 
@@ -569,60 +568,36 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                         if not track.key:
                             log.info(f"Decrypting {track.id}...")
                             try:
-                                if "common_privacy_cert" in list(ctx.obj.cdm.__dict__.keys()):
-                                    session_id = ctx.obj.cdm.open(track.pssh)
-                                    ctx.obj.cdm.set_service_certificate(
-                                        session_id,
-                                        service.certificate(
-                                            challenge=ctx.obj.cdm.service_certificate_challenge,
-                                            title=title,
-                                            track=track,
-                                            session_id=session_id
-                                        ) or ctx.obj.cdm.common_privacy_cert
-                                    )
-                                    ctx.obj.cdm.parse_license(
-                                        session_id,
+                                session_id = ctx.obj.cdm.open()
+                                downgrade_to_v4 = service_name not in ["ParamountPlus"]
+                                wrm_headers = PSSH(track.pssh).get_wrm_headers(downgrade_to_v4)
+                                challenge = ctx.obj.cdm.get_license_challenge(session_id, wrm_headers[0])
+
+                                ctx.obj.cdm.parse_license(
+                                    session_id,
+                                    base64.b64decode(
                                         service.license(
-                                            challenge=ctx.obj.cdm.get_license_challenge(session_id),
+                                            challenge=challenge,
                                             title=title,
                                             track=track,
-                                            session_id=session_id
-                                        )
-                                    )
-                                else:
-                                    session_id = ctx.obj.cdm.open()
-                                    downgrade_to_v4 = service_name not in ["ParamountPlus"]
-                                    wrm_headers = PSSH(track.pssh).get_wrm_headers(downgrade_to_v4)
-                                    challenge = ctx.obj.cdm.get_license_challenge(session_id, wrm_headers[0])
-                                    
-                                    ctx.obj.cdm.parse_license(
-                                        session_id,
-                                        base64.b64decode(
-                                            service.license(
-                                                challenge=challenge,
-                                                title=title,
-                                                track=track,
-                                            ).encode("ascii")
-                                        ).decode("ascii")
-                                    )
+                                        ).encode("ascii")
+                                    ).decode("ascii")
+                                )
                             except requests.HTTPError as e:
                                 raise RuntimeError(f"HTTP Error {e.response.status_code}: {e.response.reason}")
-                                    
+
                             content_keys = [
-                                (x.kid, x.key) for x in ctx.obj.cdm.get_keys(session_id)
-                            ] if "common_privacy_cert" in list(ctx.obj.cdm.__dict__.keys()) else [
                                 (x.key_id.hex, x.key.hex()) for x in ctx.obj.cdm.get_keys(session_id)
                             ]
-                            
+
                             if not content_keys:
                                 raise RuntimeError("No content keys were returned by the CDM!")
-                            
+
                             log.info(" + Obtained content keys from the CDM")
                             for kid, key in content_keys:
                                 if kid == "b770d5b4bb6b594daf985845aae9aa5f": continue
                                 log.info(f" + {kid}:{key}")
-                                
-                            # cache keys into all key vaults
+
                             for vault in ctx.obj.vaults.vaults:
                                 log.info(f"Caching to {vault} vault")
                                 cached = 0
@@ -635,8 +610,7 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
                                 log.info(f" + Cached {cached}/{len(content_keys)} keys")
                                 if already_exists:
                                     log.info(f" + {already_exists}/{len(content_keys)} keys already existed in vault")
-                            
-                            # use matching content key for the tracks key id
+
                             track.key = next((key for kid, key in content_keys if kid == track.kid), None)
                         else:
                             log.info(f"Decrypting {track.id}...")
@@ -705,7 +679,8 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
         elif config.decrypter == "mp4decrypt":
             decrypter_executable = shutil.which("mp4decrypt")
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        cpu_workers = min(4, (os.cpu_count() or 1))
+        with ThreadPoolExecutor(max_workers=cpu_workers) as executor:
             futures = {
                 executor.submit(process_track_decryption, track): track
                 for track in title.tracks

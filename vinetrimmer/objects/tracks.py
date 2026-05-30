@@ -21,11 +21,9 @@ from langcodes import Language
 from requests import Session
 from vinetrimmer import config
 from vinetrimmer.constants import LANGUAGE_MUX_MAP, TERRITORY_MAP
-from vinetrimmer.utils import Cdm, get_boxes, get_closest_match, is_close_match, try_get
+from vinetrimmer.utils import get_closest_match, is_close_match
 from vinetrimmer.utils.collections import as_list
 from vinetrimmer.utils.io import aria2c, download_range, m3u8dl, saldl
-from vinetrimmer.utils.subprocess import ffprobe
-#from vinetrimmer.utils.widevine.protos.widevine_pb2 import WidevineCencHeader
 from vinetrimmer.utils.xml import load_xml
 from vinetrimmer.vendor.pymp4.parser import Box, MP4
 
@@ -86,7 +84,6 @@ class Track:
         # required basic metadata
         self.note= note
         self.codec = codec
-        #self.language = Language.get(language or "none")
         self.language = Language.get(language or "en")
         self.is_original_lang = False  # will be set later
         # optional io metadata
@@ -152,17 +149,12 @@ class Track:
         if not url:
             url = as_list(self.url)[0]
 
-        with session.get(url, stream=True) as s:
-            # assuming enough to contain the pssh/kid
-            for chunk in s.iter_content(20000):
-                # we only want the first chunk
-                return chunk
-        if self.needs_proxy:
-            proxy = next(iter(session.proxies.values()), None)
-        else:
-            proxy = None
+        proxy = next(iter(session.proxies.values()), None) if self.needs_proxy and session.proxies else None
 
-        # assuming 20000 bytes is enough to contain thepssh/kid box
+        with session.get(url, stream=True) as s:
+            for chunk in s.iter_content(20000):
+                return chunk
+
         return download_range(url, 20000, proxy=proxy)
 
     def get_pssh(self, session=None):
@@ -211,50 +203,6 @@ class Track:
         except Exception as e:
             logging.getLogger("Track").debug(f"Failed to parse PSSH: {e}")
 
-        # boxes = []
-
-        # if self.descriptor == self.Descriptor.M3U:
-            # # if an m3u, try get from playlist
-            # master = m3u8.loads(session.get(as_list(self.url)[0]).text, uri=self.url)
-            # boxes.extend([
-                # Box.parse(base64.b64decode(x.uri.split(",")[-1]))
-                # for x in (master.session_keys or master.keys)
-                # if x and x.keyformat.lower() == Cdm.urn
-            # ])
-
-        # data = self.get_data_chunk(session)
-        # if data:
-            # boxes.extend(list(get_boxes(data, b"pssh")))
-
-        # for box in boxes:
-            # if box.system_ID == Cdm.uuid:
-                # print(box.system_ID)
-                # self.pssh = box
-                # return True
-
-        # for box in boxes:
-            # if box.system_ID == uuid.UUID("{9a04f079-9840-4286-ab92-e65be0885f95}"):
-                # xml_str = Box.build(box)
-                # xml_str = xml_str.decode("utf-16-le", "ignore")
-                # xml_str = xml_str[xml_str.index("<"):]
-
-                # xml = load_xml(xml_str).find("DATA")  # root: WRMHEADER
-
-                # kid = xml.findtext("KID")  # v4.0.0.0
-                # if not kid:  # v4.1.0.0
-                    # kid = next(iter(xml.xpath("PROTECTINFO/KID/@VALUE")), None)
-                # if not kid:  # v4.3.0.0
-                    # kid = next(iter(xml.xpath("PROTECTINFO/KIDS/KID/@VALUE")), None)  # can be multiple?
-
-                # # self.pssh = Box.parse(Box.build(dict(
-                    # # type=b"pssh",
-                    # # version=0,
-                    # # flags=0,
-                    # # system_ID="9a04f079-9840-4286-ab92-e65be0885f95",
-                    # # init_data=b"\x12\x10" + base64.b64decode(kid)
-                # # )))
-                # return True
-
         return False
 
     def get_kid(self, session=None):
@@ -286,62 +234,8 @@ class Track:
 
         except Exception as e:
             logging.getLogger("Track").debug(f"Failed to parse KID from PSSH: {e}")
-        
-        if self.kid or not self.encrypted:
-            return True
 
-        # boxes = []
-
-        # data = self.get_data_chunk(session)
-
-        # if data:
-            # # try get via ffprobe, needed for non mp4 data e.g. WEBM from Google Play
-            # probe = ffprobe(data)
-            # if probe:
-                # kid = try_get(probe, lambda x: x["streams"]["tags"]["enc_key_id"])
-                # if kid:
-                    # kid = base64.b64decode(kid).hex()
-                    # if kid != "00" * 16:
-                        # self.kid = kid
-                        # return True
-            # # get tenc and pssh boxes if available
-            # boxes.extend(list(get_boxes(data, b"tenc")))
-            # boxes.extend(list(get_boxes(data, b"pssh")))
-
-        # # get the track's pssh box if available
-        # if self.get_pssh():
-            # boxes.append(self.pssh)
-
-        # # loop all found boxes and try find a KID
-        # for box in sorted(boxes, key=lambda b: b.type == b"tenc", reverse=True):
-            # if box.type == b"tenc":
-                # kid = box.key_ID.hex
-                # if kid != "00" * 16:
-                    # self.kid = kid
-                    # return True
-            # if box.type == b"pssh":
-                # if box.system_ID == Cdm.uuid:
-                    # # Note: assumes only the first KID of a list is wanted
-                    # if getattr(box, "key_IDs", None):
-                        # kid = box.key_IDs[0].hex
-                        # if kid != "00" * 16:
-                            # self.kid = kid
-                            # return True
-                    # cenc_header = WidevineCencHeader()
-                    # cenc_header.ParseFromString(box.init_data)
-                    # if getattr(cenc_header, "key_id", None):
-                        # kid = cenc_header.key_id[0]
-                        # try:
-                            # int(kid, 16)  # KID may be already hex
-                        # except ValueError:
-                            # kid = kid.hex()
-                        # else:
-                            # kid = kid.decode()
-                        # if kid != "00" * 16:
-                            # self.kid = kid
-                            # return True
-
-        return False
+        return bool(self.kid) or not self.encrypted
 
     def download(self, out, name=None, headers=None, proxy=None):
         """
@@ -640,12 +534,12 @@ class AudioTrack(Track):
         return track_name or None
 
     def __str__(self):
-        size =  f" ({humanfriendly.format_size(self.size, binary=True)})" if self.size else ""
+        size = f" ({humanfriendly.format_size(self.size, binary=True)})" if self.size else ""
         codec = next((CODEC_MAP[x] for x in CODEC_MAP if (self.codec or "").startswith(x)), self.codec)
+        codec_display = f"{codec}{' (Atmos)' if self.atmos else ''}"
         return " | ".join([x for x in [
             "├─ AUD",
-            f"[{codec}]",
-            f"[{self.codec}{', atmos' if self.atmos else ''}]",
+            f"[{codec_display}]",
             f"{self.channels}" if self.channels else None,
             f"{self.bitrate // 1000 if self.bitrate else '?'} kb/s{size}",
             f"{self.language}",
@@ -1166,6 +1060,21 @@ class Tracks:
             for track in tracks:
                 yield track
 
+    VIDEO_CODEC_MAP = {
+        "H264": ["avc1", "avc3"],
+        "H265": ["hev1", "hvc1", "dvh1", "dvhe"],
+        "VP9": ["vp9"],
+        "AV1": ["av1"],
+    }
+
+    AUDIO_CODEC_MAP = {
+        "AAC": ["mp4a"],
+        "AC3": ["ac-3", "ac3"],
+        "EC3": ["ec-3", "eac3", "eac-3"],
+        "VORB": ["vorbis"],
+        "OPUS": ["opus"],
+    }
+
     def select_videos(self, by_language=None, by_vbitrate=None, by_quality=None, by_range=None, 
         one_only: bool = True, by_codec=None, should_fallback: bool = False
     ) -> None:
@@ -1224,7 +1133,7 @@ class Tracks:
         if not with_descriptive:
             self.audios = [x for x in self.audios if not x.descriptive]
         if by_codec:
-            codec_audio = list(filter(lambda x: any(y for y in self.AUDIO_CODEC_MAP[by_codec] if y in x.codec), self.audio))
+            codec_audio = list(filter(lambda x: any(y for y in self.AUDIO_CODEC_MAP[by_codec] if y in x.codec), self.audios))
             if not codec_audio and not should_fallback:
                 raise ValueError(f"There's no {by_codec} audio tracks. Aborting.")
             else:

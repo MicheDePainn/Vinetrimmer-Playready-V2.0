@@ -394,18 +394,17 @@ class ParamountPlus(BaseService):
         return cookies
     
     def get_barrear(self, content_id):
-        #license_data = self.session.get(url="https://www.intl.paramountplus.com/apps-api/v3.0/androidphone/irdeto-control/session-token.json?contentId=%s&locale=en-us&at=ABATOpD5wXyjhjIMO0BaNh/gW0iCu0ISRy2U7/tyGiKZTQTlYDFL1NPD58CcuJLOQYY=" % (content_id)).json()
         try:  
             res = self.session.get(url=self.config[self.region]["barrearUrl"], params={"contentId": content_id})
             res.raise_for_status()
         except requests.HTTPError as e:
             if e.response.status_code == 401:
                 self.log.warning("Received a 401 error, deleting cached cookies")
-                self.device_cache_path.unlink()
                 self.session.headers.clear()
                 self.session.params = {}
                 self.configure()
-                self.retrying = True
+                return self.get_barrear(content_id)
+            raise
         
         res = res.json()
 

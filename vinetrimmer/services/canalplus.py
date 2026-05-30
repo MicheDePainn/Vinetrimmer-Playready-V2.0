@@ -267,7 +267,8 @@ class CanalPlus(BaseService):
                         source=self.ALIASES[0]
                     )
         for x in tracks:
-            for num, y in enumerate(reversed(x.url)):
+            urls = x.url if isinstance(x.url, list) else [x.url]
+            for num, y in enumerate(reversed(urls)):
                 if "a000" in str(x):
                     if hasattr(x, 'channels'):
                         x.channels = re.sub(r'a000', '5.0', str(x.channels))
@@ -277,7 +278,10 @@ class CanalPlus(BaseService):
                     if requests.head(y).status_code == 200:
                         break
                     else:
-                        x.url.remove(y)
+                        if isinstance(x.url, list):
+                            x.url.remove(y)
+                        else:
+                            x.url = None
 
         return tracks
 

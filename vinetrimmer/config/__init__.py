@@ -77,8 +77,7 @@ setup_paths()
 # NOTE: The import cannot be moved to the top of the file, it will cause a circular import error.
 from vinetrimmer.services import SERVICE_MAP  # noqa: E402
 
-if "range_" not in config.arguments:
-    config.arguments["range_"] = config.arguments.get("range_")
+config.arguments.setdefault("range_", None)
 for service, aliases in SERVICE_MAP.items():
     for alias in aliases:
         config.arguments[alias] = config.arguments.get(service)

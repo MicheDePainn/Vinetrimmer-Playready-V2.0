@@ -34,6 +34,7 @@ def get_m3u8dl_exe():
 def get_ffmpeg_exe():
     return shutil.which("ffmpeg")
 
+@functools.lru_cache(maxsize=32)
 def load_yaml(path):
     if not os.path.isfile(path):
         return {}
@@ -190,20 +191,27 @@ async def aria2c(uri, out, headers=None, proxy=None):
         ])
 
     if proxy:
-        arguments.append("--all-proxy")
         if proxy.lower().startswith("https://"):
             auth, hostname = proxy[8:].split("@")
             async with start_pproxy(*hostname.split(":"), *auth.split(":")) as pproxy_:
-                arguments.extend([pproxy_, "-d"])
+                proc_args = arguments + ["--all-proxy", pproxy_, "-d"]
                 if segmented:
-                    arguments.extend([segments_dir, "-i-"])
-                    proc = await asyncio.create_subprocess_exec(*arguments, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    proc = await asyncio.create_subprocess_exec(
+                        *proc_args, segments_dir, "-i-",
+                        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                    )
                     await proc.communicate(as_list(uri)[0].encode("utf-8"))
                 else:
-                    arguments.extend([os.path.dirname(out), uri])
-                    proc = await asyncio.create_subprocess_exec(*arguments, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    proc = await asyncio.create_subprocess_exec(
+                        *proc_args, os.path.dirname(out), uri,
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                    )
                     await proc.communicate()
+            if proc.returncode != 0:
+                raise ValueError("Aria2c failed, aborting")
+            return
         else:
+            arguments.append("--all-proxy")
             arguments.append(proxy)
 
     try:

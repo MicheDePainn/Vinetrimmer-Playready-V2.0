@@ -213,7 +213,7 @@ class Peacock(BaseService):
                 track.hdr10 = True if supported_colour_spaces == ["HDR10"] else False
         if supported_colour_spaces == ["DolbyVision"]:
             for track in tracks.videos:
-                track.dolbyvison = True if supported_colour_spaces == ["DV"] else False
+                track.dv = True if supported_colour_spaces == ["DolbyVision"] else False
 
         for track in tracks:
             track.needs_proxy = True

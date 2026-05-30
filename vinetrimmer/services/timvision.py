@@ -239,13 +239,17 @@ class TimVision(BaseService):
                     )
 
         for x in tracks:
-            for num, y in enumerate(reversed(x.url)):
+            urls = x.url if isinstance(x.url, list) else [x.url]
+            for num, y in enumerate(reversed(urls)):
                 if num > 8:
                     break
                 if requests.head(y).status_code == 200:
                     break
                 else:
-                    x.url.remove(y)
+                    if isinstance(x.url, list):
+                        x.url.remove(y)
+                    else:
+                        x.url = None
 
         return tracks
 

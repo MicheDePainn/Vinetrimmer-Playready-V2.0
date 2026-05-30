@@ -108,35 +108,31 @@ class Vaults:
     def __iter__(self):
         return iter(self.vaults)
 
+    def _sanitize_table_name(self, table):
+        return "".join(c for c in table if c.isalnum() or c == "_")
+
     def get(self, kid, title):
         for vault in self.vaults:
-            # Note on why it matches by KID instead of PSSH:
-            # Matching cache by pssh is not efficient. The PSSH can be made differently by all different
-            # clients for all different reasons, e.g. only having the init data, but the cached PSSH is
-            # a manually crafted PSSH, which may not match other clients manually crafted PSSH, and such.
-            # So it searches by KID instead for this reason, as the KID has no possibility of being different
-            # client to client other than capitalization. There is an unknown with KID matching, It's unknown
-            # for *sure* if the KIDs ever conflict or not with another bitrate/stream/title. I haven't seen
-            # this happen ever and neither has anyone I have asked.
             if not self.table_exists(vault, self.service):
-                continue  # this service has no service table, so no keys, just skip
+                continue
             if not vault.ticket:
                 raise ValueError(f"Vault {vault.name} does not have a valid ticket available.")
+            table = self._sanitize_table_name(self.service)
             c = self.adb.safe_execute(
                 vault.ticket,
                 lambda db, cursor: cursor.execute(
-                    "SELECT `id`, `key_`, `title` FROM `{1}` WHERE `kid`={0}".format(vault.ph, self.service),
+                    f"SELECT `id`, `key_`, `title` FROM `{table}` WHERE `kid`={vault.ph}",
                     [kid]
                 ).fetchone()
             )
             if c:
                 if isinstance(c, dict):
                     c = list(c.values())
-                if not c[2] and vault.has_permission("UPDATE", table=self.service):
+                if not c[2] and vault.has_permission("UPDATE", table=table):
                     self.adb.safe_execute(
                         vault.ticket,
                         lambda db, cursor: cursor.execute(
-                            "UPDATE `{1}` SET `title`={0} WHERE `id`={0}".format(vault.ph, self.service),
+                            f"UPDATE `{table}` SET `title`={vault.ph} WHERE `id`={vault.ph}",
                             [title, c[0]]
                         )
                     )
@@ -147,6 +143,7 @@ class Vaults:
     def table_exists(self, vault, table):
         if not vault.ticket:
             raise ValueError(f"Vault {vault.name} does not have a valid ticket available.")
+        table = self._sanitize_table_name(table)
         if vault.type == Vault.Types.LOCAL:
             return self.adb.safe_execute(
                 vault.ticket,
@@ -168,12 +165,13 @@ class Vaults:
             return
         if not vault.ticket:
             raise ValueError(f"Vault {vault.name} does not have a valid ticket available.")
+        table = self._sanitize_table_name(table)
         if vault.has_permission("CREATE"):
             print(f"Creating `{table}` table in {vault} key vault...")
             self.adb.safe_execute(
                 vault.ticket,
                 lambda db, cursor: cursor.execute(
-                    "CREATE TABLE IF NOT EXISTS {} (".format(table) + (
+                    f"CREATE TABLE IF NOT EXISTS `{table}` (" + (
                         """
                         "id"        INTEGER NOT NULL UNIQUE,
                         "kid"       TEXT NOT NULL COLLATE NOCASE,
@@ -200,12 +198,13 @@ class Vaults:
             return InsertResult.FAILURE
         if not vault.ticket:
             raise ValueError(f"Vault {vault.name} does not have a valid ticket available.")
+        table = self._sanitize_table_name(table)
         if not vault.has_permission("INSERT", table=table):
             raise ValueError(f"Cannot insert key into Vault. Vault {vault.name} has no INSERT permission.")
         if self.adb.safe_execute(
             vault.ticket,
             lambda db, cursor: cursor.execute(
-                "SELECT `id` FROM `{1}` WHERE `kid`={0} AND `key_`={0}".format(vault.ph, self.service),
+                f"SELECT `id` FROM `{table}` WHERE `kid`={vault.ph} AND `key_`={vault.ph}",
                 [kid, key]
             ).fetchone()
         ):
@@ -213,8 +212,8 @@ class Vaults:
         self.adb.safe_execute(
             vault.ticket,
             lambda db, cursor: cursor.execute(
-                "INSERT INTO `{1}` (kid, key_, title) VALUES ({0}, {0}, {0})".format(vault.ph, table),
-                (kid, key, title)
+                f"INSERT INTO `{table}` (kid, key_, title) VALUES ({vault.ph}, {vault.ph}, {vault.ph})",
+                [kid, key, title]
             )
         )
         if commit:

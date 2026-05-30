@@ -891,7 +891,7 @@ class Amazon(BaseService):
                     re.split(r"(?i)(/)", mpd_url)[:5] + re.split(r"(?i)(/)", mpd_url)[9:]
                 )
             except IndexError:
-                self.log.warning("Unable to parse MPD URL")
+                pass
 
         return mpd_url
         

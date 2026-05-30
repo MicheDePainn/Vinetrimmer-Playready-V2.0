@@ -241,10 +241,10 @@ class Skyshowtime(BaseService):
         
         if supported_colour_spaces == ["HDR10"]:
             for track in tracks.videos:
-                track.hdr10 = True if supported_colour_spaces == ["HDR10"] else False
+                track.hdr10 = True
         if supported_colour_spaces == ["DolbyVision"]:
             for track in tracks.videos:
-                track.dolbyvison = True if supported_colour_spaces == ["DV"] else False
+                track.dv = True
 
         for track in tracks:
             track.needs_proxy = True
@@ -260,8 +260,8 @@ class Skyshowtime(BaseService):
     def get_chapters(self, title: Title) -> list[MenuTrack]:
         return []
 
-    def certificate(self, challenge, **_):
-        return self.license(challenge)
+    def certificate(self, *_, **__):
+        return None
 
     def license(self, challenge: bytes, **_) -> bytes:
         assert self.license_api is not None

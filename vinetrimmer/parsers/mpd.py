@@ -1,7 +1,5 @@
-import xmltodict
 import asyncio
 import base64
-import json
 import math
 import os
 import re
@@ -16,10 +14,8 @@ from langcodes.tag_parser import LanguageTagError
 
 from vinetrimmer import config
 from vinetrimmer.objects import AudioTrack, TextTrack, Track, Tracks, VideoTrack
-from vinetrimmer.utils import Cdm
 from vinetrimmer.utils.io import aria2c
 from vinetrimmer.utils.xml import load_xml
-from vinetrimmer.vendor.pymp4.parser import Box
 
 
 def parse(*, url: str | None = None, data: str | None = None, source: str, session=None, downloader: str | None = None) -> Tracks:
@@ -394,86 +390,6 @@ def parse(*, url: str | None = None, data: str | None = None, source: str, sessi
                                     # extra
                                     extra=(rep, adaptation_set)
                                 ))
-
-    # r = session.get(url=url)
-    # mpd = json.loads(json.dumps(xmltodict.parse(r.text)))
-    # period = mpd['MPD']['Period']
-
-    # try:
-    #     base_url = urllib.parse.urljoin(mpd['MPD']['BaseURL'], period['BaseURL'])
-    #     print('1', base_url)
-    # except KeyError:
-    #     base_url = url.rsplit('/', 1)[0] + '/'
-
-    # try:
-    #     stracks = []
-    #     for pb in period:
-    #         stracks = stracks + pb['AdaptationSet']
-    # except TypeError:
-    #     stracks = period['AdaptationSet']
-
-    # def force_instance(item):
-    #     if isinstance(item['Representation'], list):
-    #         X = item['Representation']
-    #     else:
-    #         X = [item['Representation']]
-    #     return X
-
-    # # subtitles
-    # subs_list = []
-    # for subs_tracks in stracks:
-    #     if subs_tracks['@contentType'] == 'text':
-    #         for x in force_instance(subs_tracks):
-
-    #             try:
-    #                 sub_path_url = x['BaseURL']
-    #             except KeyError:
-    #                 sub_path_url = x['SegmentTemplate']['@media']
-
-    #             try:
-    #                 path = re.search(r'(t\/.+?\/)t', sub_path_url).group(1)
-    #             except AttributeError:
-    #                 path = 't/sub/'
-
-    #             isCC = False
-    #             if subs_tracks["Role"]["@value"] == "caption":
-    #                 isCC = True
-    #             isNormal = False
-                
-    #             if isCC:
-    #                 lang_id = str(Language.get(subs_tracks['@lang'])) + '-sdh'
-    #                 sub_url = base_url + path + subs_tracks['@lang'] + '_sdh.vtt'
-    #                 trackType = 'SDH'
-    #             else:
-    #                 lang_id = str(Language.get(subs_tracks['@lang']))
-    #                 sub_url = base_url + path + subs_tracks['@lang'] + '_sub.vtt'
-    #                 isNormal = True
-    #                 trackType = 'NORMAL'
-
-    #             isForced = False
-    #             if subs_tracks["Role"]["@value"] == "forced-subtitle":
-    #                 isForced = True
-    #                 isNormal = False
-    #                 trackType = 'FORCED'
-    #                 lang_id = str(Language.get(subs_tracks['@lang'])) + '-forced'
-    #                 sub_url = base_url + path + subs_tracks['@lang'] + '_forced.vtt'
-     
-
-    #             tracks.append(TextTrack(
-    #                 id_=lang_id,
-    #                 source=source,
-    #                 url=sub_url,
-    #                 # metadata
-    #                 codec=(codecs or "").split(".")[0],
-    #                 language=str(Language.get(subs_tracks['@lang'])),
-    #                 forced=isForced,
-    #                 sdh=isCC,
-    #                 # switches/options
-    #                 descriptor=Track.Descriptor.MPD,
-    #                 # extra
-    #                 extra=(x, subs_tracks)
-    #             ))
-
 
     # Add tracks, but warn only. Assume any duplicate track cannot be handled.
     # Since the custom track id above uses all kinds of data, there realistically would
