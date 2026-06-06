@@ -673,7 +673,7 @@ def result(ctx, service, quality, range_, wanted, alang, slang, audio_only, subs
 
         decrypter_executable = None
         if config.decrypter == "packager":
-            platform_name = {"win32": "win", "darwin": "osx"}.get(sys.platform, sys.platform)
+            platform_name = {"win32": "win", "darwin": "osx", "linux": "linux"}.get(sys.platform, sys.platform)
             names = ["shaka-packager", "packager", f"packager-{platform_name}"]
             decrypter_executable = next((x for x in (shutil.which(x) for x in names) if x), None)
         elif config.decrypter == "mp4decrypt":

@@ -1,6 +1,6 @@
 # Vinetrimmer Playready 2.0
 
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-0078D4?logo=windows&logoColor=white)
 ![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-44CC11)
 
@@ -54,10 +54,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 ## Requirements
 
-> [!IMPORTANT]  
-> This project is currently compatible with **Windows environments only**.
-
-- **Operating System**: Windows 10 / 11
+- **Operating System**: Windows 10 / 11 / Linux (Ubuntu/Debian, Arch, etc.)
 - **Python**: 3.10 - 3.13
 - **Package Manager**: [Poetry](https://python-poetry.org/) recommended.
 - **Core Binaries**: (Must be placed in `binaries/` or added to system PATH via `install_binaries.py`)
@@ -76,8 +73,18 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
    ```bash
    git clone https://github.com/MicheDePainn/Vinetrimmer-Playready-V2.0.git --depth 1
    ```
-2. Ensure you have the **Microsoft Visual C++ Redistributable** installed.
-3. Double-click on `install.bat`.
+2. **Windows**: Ensure you have the **Microsoft Visual C++ Redistributable** installed.
+   **Linux**: Install system dependencies:
+   ```bash
+   sudo apt update
+   sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix
+   ```
+3. **Windows**: Double-click on `install.bat`.
+   **Linux**: Run the install script:
+   ```bash
+   chmod +x install.sh
+   ./install.sh
+   ```
    
    *Alternatively, run manually via command line:*
    ```bash
@@ -111,11 +118,13 @@ The main command engine is `vt dl`. You can run it by calling `poetry run vt dl`
   poetry run vt dl --cache MAX [TitleID]
   ```
 
-### Quick Access (Windows Shortcuts)
+### Quick Access (Shortcuts)
 
-Several batch scripts are provided in the root directory for common tasks:
-- **Service Shortcuts**: Use `download.[Service].bat` (e.g., `download.Amazon.bat`) for quick downloads without manual CLI typing.
-- **Help**: Run `help.bat` to see all available commands and flags.
+Helper scripts are provided in the `scripts/` directory for common tasks:
+- **Windows**: Use `scripts\download.[Service].bat` (e.g., `scripts\download.Amazon.bat`) for quick downloads.
+- **Linux**: Use `scripts/download.[Service].sh` (e.g., `scripts/download.Amazon.sh`) for quick downloads.
+- **Help**: Run `scripts\help.bat` (Windows) or `scripts/download.sh` (Linux) to see all available commands and flags.
+- **Install**: Run `install.bat` (Windows) or `install.sh` (Linux) to set up the project.
 
 ### Configuration
 

@@ -24,7 +24,7 @@ def get_aria2c_exe():
 
 @functools.lru_cache(maxsize=1)
 def get_saldl_exe():
-    return shutil.which("saldl") or shutil.which("saldl-win64") or shutil.which("saldl-win32")
+    return shutil.which("saldl")
 
 @functools.lru_cache(maxsize=1)
 def get_m3u8dl_exe():
@@ -163,7 +163,7 @@ async def aria2c(uri, out, headers=None, proxy=None):
         "--max-tries", "15",
         "--max-file-not-found", "15",
         "--summary-interval", "0",
-        "--file-allocation", "none" if sys.platform == "win32" else "falloc",
+        "--file-allocation", "falloc" if sys.platform != "win32" else "none",
         "--console-log-level", "error",
         "--download-result", "hide",
         "--async-dns", "false"
@@ -262,7 +262,7 @@ async def saldl(uri, out, headers=None, proxy=None):
     if headers:
         headers.update({k: v for k, v in headers.items() if k.lower() != "accept-encoding"})
 
-    executable = shutil.which("saldl") or shutil.which("saldl-win64") or shutil.which("saldl-win32")
+    executable = shutil.which("saldl")
     if not executable:
         raise EnvironmentError("Saldl executable not found...")
 

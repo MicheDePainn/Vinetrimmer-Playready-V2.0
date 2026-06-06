@@ -29,7 +29,7 @@ from vinetrimmer.vendor.pymp4.parser import Box, MP4
 
 @functools.lru_cache(maxsize=1)
 def get_ccextractor_exe():
-    return shutil.which("ccextractor") or shutil.which("ccextractorwin")
+    return shutil.which("ccextractor")
 
 @functools.lru_cache(maxsize=1)
 def get_mkvmerge_exe():
@@ -451,7 +451,7 @@ class VideoTrack(Track):
         if not self._location:
             raise ValueError("You must download the track first.")
 
-        executable = shutil.which("ccextractor") or shutil.which("ccextractorwin")
+        executable = shutil.which("ccextractor")
         if not executable:
             raise EnvironmentError("ccextractor executable was not found.")
 
