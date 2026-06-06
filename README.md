@@ -13,7 +13,6 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Maintenance Scripts](#maintenance-scripts)
-- [Roadmap](#roadmap)
 - [Disclaimer](#disclaimer)
 
 ---
@@ -34,7 +33,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 | Service | Alias | Platform URL | Risk Level / Ban Policy |
 | :--- | :--- | :--- | :--- |
-| **Amazon** | `AMZN` | primevideo.com / amazon.com | Instant Account Ban |
+| **Amazon** | `AMZN` | primevideo.com / amazon.com | Instant Account Ban * |
 | **Apple TV+** | `ATVP` | tv.apple.com | Instant Account Ban |
 | **iTunes** | `iT` | itunes.apple.com | Instant Account Ban |
 | **Canal+** | `CNP` | canalplus.com | Temporary IP Ban / Warning |
@@ -44,9 +43,12 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 | **TimVision** | `TMVS` | timvision.it | Temporary IP Ban / Warning |
 | **Hulu** | `HULU` | hulu.com | Low / Moderate Risk |
 | **Max** | `MAX` | max.com | Low / Moderate Risk |
-| **Paramount+** | `PMTP` | paramountplus.com | Low / Moderate Risk |
+| **Paramount+** | `PMTP` | paramountplus.com | Low / Moderate Risk * |
 | **Peacock** | `PCOK` | peacocktv.com | Low / Moderate Risk |
-| **France TV** | `FRTV` | france.tv | Safe / No Risk |
+| **France TV** | `FRTV` | france.tv | Safe / No Risk * |
+
+> [!NOTE]
+> Entries marked with `*` have been independently verified.
 
 ---
 
@@ -137,14 +139,7 @@ A collection of utility scripts is provided in the `scripts/` directory:
 - `MakeWVD.py`: Convert folder-based CDM data into Vinetrimmer WVD structs.
 - `VMPBlobGen.py`: Generate VMP (Verified Media Path) blobs for Chrome CDM.
 - `ParseClientID.py`: Inspect Widevine Client ID blobs.
-- `benchmark.py`: Test and compare download speeds of the engine (located at root).
-
----
-
-## Roadmap
-
-- [ ] **Strict Pydantic Validation**: Replacing standard dictionaries with strictly typed models for configurations and API responses to enhance reliability.
-- [ ] **Asynchronous Architecture**: Migrating the core HTTP engine to `asyncio` to drastically increase network execution performance.
+- `Benchmark.py`: Test and compare download speeds of the engine (located at root).
 
 ---
 
