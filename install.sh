@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "$EUID" -eq 0 ]; then
+    echo "Erreur : Ce script ne doit pas être exécuté en tant que root (sudo)."
+    echo "L'exécution avec sudo attribue la propriété du dossier .venv à root, ce qui bloquera les installations futures."
+    echo "Relancez le script en tant qu'utilisateur standard (ex: ./install.sh)."
+    exit 1
+fi
+
 PYTHON=$(command -v python3 || command -v python)
 
 detect_distro() {
@@ -37,21 +44,27 @@ echo "          Vinetrimmer Playready 2.0 Installer"
 echo "========================================================"
 echo ""
 
-# Suggest system dependencies
 echo "Recommended system packages:"
 case "$DISTRO" in
-    deb)    echo "  sudo apt update && sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor" ;;
-    rpm)    echo "  sudo dnf install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor" ;;
-    arch)   echo "  sudo pacman -S python python-pip python-virtualenv aria2 ffmpeg mkvtoolnix ccextractor" ;;
-    suse)   echo "  sudo zypper install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor" ;;
-    *)      echo "  Ensure python3, pip, aria2, ffmpeg, mkvtoolnix, ccextractor are installed" ;;
+    deb)    echo "  sudo apt update && sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-dev libssl-dev python3-dev libxml2-dev libxslt1-dev libmediainfo0v5 pipx" ;;
+    rpm)    echo "  sudo dnf install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-devel openssl-devel python3-devel libxml2-devel libxslt-devel libmediainfo pipx" ;;
+    arch)   echo "  sudo pacman -S python python-pip python-virtualenv aria2 ffmpeg mkvtoolnix ccextractor curl libffi openssl libxml2 libxslt libmediainfo python-pipx" ;;
+    suse)   echo "  sudo zypper install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-devel libopenssl-devel python3-devel libxml2-devel libxslt1-devel libmediainfo pipx" ;;
+    *)      echo "  Ensure python3, pip, aria2, ffmpeg, mkvtoolnix, ccextractor, and C-development headers are installed" ;;
 esac
 echo ""
 
 if ! command -v poetry &>/dev/null; then
     echo "Installing Poetry..."
-    $PYTHON -m pip install --upgrade pip
-    $PYTHON -m pip install poetry
+    if [ "$DISTRO" = "deb" ]; then
+        echo "Using pipx for Debian-based systems to comply with PEP 668..."
+        pipx ensurepath
+        pipx install poetry
+        export PATH="$HOME/.local/bin:$PATH"
+    else
+        $PYTHON -m pip install --upgrade pip
+        $PYTHON -m pip install poetry || $PYTHON -m pip install poetry --break-system-packages
+    fi
 else
     echo "Poetry is already installed, skipping."
 fi
@@ -67,6 +80,7 @@ if [ -f ".venv/bin/python" ]; then
     echo "Dependencies already installed, skipping."
 else
     echo "Installing dependencies..."
+    export CFLAGS="-Wno-incompatible-pointer-types"
     poetry install
 fi
 
@@ -85,7 +99,7 @@ echo ""
 echo "Installation complete! You can now run 'poetry run vt dl -h' or use the download scripts."
 echo ""
 echo "Quick start:"
-echo "  poetry run vt dl -h                                    # Show help"
-echo "  poetry run vt dl --list AMZN B123456789                # List available tracks"
-echo "  poetry run vt dl DSNP entity_id                        # Download a title"
-echo "  scripts/download.Amazon.sh                             # Interactive download"
+echo "  poetry run vt dl -h"
+echo "  poetry run vt dl --list AMZN B123456789"
+echo "  poetry run vt dl DSNP entity_id"
+echo "  scripts/download.Amazon.sh"

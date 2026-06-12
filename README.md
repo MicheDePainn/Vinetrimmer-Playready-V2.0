@@ -7,6 +7,7 @@
 A powerful, high-performance CLI engine for downloading and decrypting Widevine and PlayReady DRM-protected content from various streaming platforms. Designed for research and archival purposes.
 
 ## Table of Contents
+
 - [Key Features](#key-features)
 - [Supported Services](#supported-services)
 - [Requirements](#requirements)
@@ -33,7 +34,7 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 | Service | Alias | Platform URL | Risk Level / Ban Policy |
 | :--- | :--- | :--- | :--- |
-| **Amazon** | `AMZN` | primevideo.com / amazon.com | Instant Account Ban * |
+| **Amazon** | `AMZN` | primevideo.com / amazon.com | Instant Account Ban \* |
 | **Apple TV+** | `ATVP` | tv.apple.com | Instant Account Ban |
 | **iTunes** | `iT` | itunes.apple.com | Instant Account Ban |
 | **Canal+** | `CNP` | canalplus.com | Temporary IP Ban / Warning |
@@ -43,12 +44,11 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 | **TimVision** | `TMVS` | timvision.it | Temporary IP Ban / Warning |
 | **Hulu** | `HULU` | hulu.com | Low / Moderate Risk |
 | **Max** | `MAX` | max.com | Low / Moderate Risk |
-| **Paramount+** | `PMTP` | paramountplus.com | Low / Moderate Risk * |
+| **Paramount+** | `PMTP` | paramountplus.com | Low / Moderate Risk \* |
 | **Peacock** | `PCOK` | peacocktv.com | Low / Moderate Risk |
-| **France TV** | `FRTV` | france.tv | Safe / No Risk * |
+| **France TV** | `FRTV` | france.tv | Safe / No Risk \* |
 
-> [!NOTE]
-> Entries marked with `*` have been independently verified.
+> **Note** : Entries marked with `\*` have been independently verified.
 
 ---
 
@@ -56,8 +56,8 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 - **Operating System**: Windows 10 / 11 / Linux (Ubuntu/Debian, Arch, etc.)
 - **Python**: 3.10 - 3.13
-- **Package Manager**: [Poetry](https://python-poetry.org/) recommended.
-- **Core Binaries**: (Must be placed in `binaries/` or added to system PATH via `install_binaries.py`)
+- **Package Manager**: [Poetry](https://python-poetry.org/) recommended (`pipx` required on modern Linux distributions).
+- **Core Binaries**:
   - `aria2c`: High-speed segmented downloading.
   - `ffmpeg` / `ffprobe`: Media processing and analysis.
   - `mkvmerge`: Container muxing.
@@ -69,26 +69,32 @@ A powerful, high-performance CLI engine for downloading and decrypting Widevine 
 
 ## Installation
 
-1. Clone the repository using the following command (the `--depth 1` argument is optional but highly recommended to save a lot of time):
+1. Clone the repository using the following command (the `--depth 1` argument is optional but highly recommended to save a lot of time) :
+
    ```bash
    git clone https://github.com/MicheDePainn/Vinetrimmer-Playready-V2.0.git --depth 1
    ```
-2. **Windows**: Ensure you have the **Microsoft Visual C++ Redistributable** installed.
-   **Linux**: Install system dependencies:
+
+2. **Windows** : Ensure you have the **Microsoft Visual C++ Redistributable** installed.
+   **Linux** : Install system dependencies:
+
    ```bash
    sudo apt update
-   sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix
+   sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix curl libffi-dev libssl-dev python3-dev libxml2-dev libxslt1-dev libmediainfo0v5 pipx
    ```
-3. **Windows**: Double-click on `install.bat`.
-   **Linux**: Run the install script:
+
+3. **Windows** : Double-click on `install.bat`.
+   **Linux** : Run the install script as a standard user:
+
    ```bash
    chmod +x install.sh
    ./install.sh
    ```
-   
+
    *Alternatively, run manually via command line:*
+
    ```bash
-   python -m pip install poetry
+   pipx install poetry
    poetry install
    python install_binaries.py
    ```
@@ -102,14 +108,19 @@ The main command engine is `vt dl`. You can run it by calling `poetry run vt dl`
 ### Basic Commands
 
 - **List available tracks**:
+
   ```bash
   poetry run vt dl --list AMZN [ASIN]
   ```
+
 - **Download highest quality**:
+
   ```bash
   poetry run vt dl DSNP [EntityID]
   ```
+
 - **Select specific quality and languages**:
+
   ```bash
   poetry run vt dl -q 1080 -al eng,fra -sl eng AMZN [ASIN]
   ```
