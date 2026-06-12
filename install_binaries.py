@@ -29,11 +29,11 @@ if IS_WINDOWS:
     }
 else:
     SOURCES = {
-        "aria2": "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0.tar.xz",
+        "aria2": None,
         "bento4": "https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-unknown-linux.zip",
         "ccextractor": "https://github.com/CCExtractor/ccextractor/releases/download/v0.96.6/ccextractor-hardsubx-x86_64.AppImage",
         "ffmpeg": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
-        "mkvtoolnix": "https://mkvtoolnix.download/appimage/MKVToolNix_GUI-99.0-x86_64.AppImage",
+        "mkvtoolnix": None,
         "n_m3u8dl-re": "https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.5.1-beta/N_m3u8DL-RE_v0.5.1-beta_linux-x64_20251029.tar.gz",
         "packager": "https://github.com/shaka-project/shaka-packager/releases/download/v3.7.2/packager-linux-x64",
         "subtitleedit": None,
@@ -80,10 +80,16 @@ def extract_flat(zip_bytes, target_dir):
 
             if dest_rel_path:
                 dest = os.path.join(target_dir, dest_rel_path)
-            elif filename.lower().endswith(('.exe', '.dll') if IS_WINDOWS else ('.exe', '.so')):
-                dest = os.path.join(target_dir, os.path.basename(filename))
+            elif IS_WINDOWS:
+                if filename.lower().endswith(('.exe', '.dll')):
+                    dest = os.path.join(target_dir, os.path.basename(filename))
+                else:
+                    continue
             else:
-                continue
+                if filename.lower().endswith('.so') or '/bin/' in filename:
+                    dest = os.path.join(target_dir, os.path.basename(filename))
+                else:
+                    continue
 
             if os.path.basename(dest).lower() == "ccextractorwinfull.exe":
                 dest = os.path.join(target_dir, "ccextractor.exe")
@@ -93,15 +99,22 @@ def extract_flat(zip_bytes, target_dir):
                 shutil.copyfileobj(source, target)
 
 
-def extract_tar_xz(stream, target_dir):
+def extract_tar(stream, target_dir, mode='r:xz'):
     import tarfile
-    BIN_NAMES = {'aria2c', 'ffmpeg', 'ffprobe', 'mkvmerge', 'mkvextract', 'mkvinfo', 'mkvpropedit'}
+    BIN_NAMES = {'aria2c', 'ffmpeg', 'ffprobe', 'mkvmerge', 'mkvextract', 'mkvinfo', 'mkvpropedit',
+                 'N_m3u8DL-RE', 'N_m3u8DL-RE.bin'}
     stream.seek(0)
-    with tarfile.open(fileobj=stream, mode="r:xz") as tar:
+    with tarfile.open(fileobj=stream, mode=mode) as tar:
         for member in tar.getmembers():
             if member.isfile():
                 name = os.path.basename(member.name)
-                if name in BIN_NAMES or name.lower().endswith(('.exe', '.so')):
+                if name in BIN_NAMES or name.lower().endswith(('.so',)):
+                    dest = os.path.join(target_dir, name)
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    with tar.extractfile(member) as source, open(dest, "wb") as target:
+                        shutil.copyfileobj(source, target)
+                    os.chmod(dest, 0o755)
+                elif name and '.' not in name.replace('_', '').replace('-', ''):
                     dest = os.path.join(target_dir, name)
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
                     with tar.extractfile(member) as source, open(dest, "wb") as target:
@@ -118,13 +131,23 @@ def main():
 
     for name, url in SOURCES.items():
         if url is None:
-            print(f"\n--- {name} --- (skipped, not available for this platform)")
-            print(f"Please install via your package manager (e.g. apt install {name})")
+            pkg_map = {"aria2": "aria2", "mkvtoolnix": "mkvtoolnix", "subtitleedit": "subtitleedit", "curl": "curl"}
+            pkg = pkg_map.get(name, name)
+            print(f"\n--- {name} --- (not available as direct download for this platform)")
+            print(f"Please install via your package manager:")
+            print(f"  Debian/Ubuntu: sudo apt install {pkg}")
+            print(f"  Fedora:        sudo dnf install {pkg}")
+            print(f"  Arch:          sudo pacman -S {pkg}")
             continue
 
         print(f"\n--- Processing {name} on {sys.platform} ---")
 
-        if name in ("packager",):
+        if url.endswith(".AppImage"):
+            dest = os.path.join(BIN_DIR, name)
+            download_file(url, dest)
+            if not IS_WINDOWS:
+                os.chmod(dest, 0o755)
+        elif name in ("packager",):
             out_name = f"{name}{BIN_EXT}"
             dest_exe = os.path.join(BIN_DIR, out_name)
             download_file(url, dest_exe)
@@ -142,12 +165,16 @@ def main():
         elif url.endswith(".tar.xz"):
             stream = download_file(url)
             if stream:
-                extract_tar_xz(stream, BIN_DIR)
+                extract_tar(stream, BIN_DIR, 'r:xz')
+        elif url.endswith(".tar.gz"):
+            stream = download_file(url)
+            if stream:
+                extract_tar(stream, BIN_DIR, 'r:gz')
 
     print(f"\n[+] All binaries downloaded to '{BIN_DIR}'.")
-    print("\n[!] Note: For Linux, you may also install system-wide via your package manager:")
+    print("\n[!] For Linux, ensure system packages are installed:")
     print("    sudo apt install aria2 ffmpeg mkvtoolnix ccextractor")
-    print("    For mp4decrypt: download Bento4 from https://www.bento4.com/")
+    print("    For mp4decrypt: Bento4 is downloaded above to binaries/")
     print("    For N_m3u8DL-RE and packager, they are handled above.")
 
 

@@ -34,5 +34,5 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo Installation complete! You can now use the download.*.bat scripts or run 'poetry run vt dl -h'
+echo Installation complete! You can now use scripts\download.*.bat or run 'poetry run vt dl -h'
 pause

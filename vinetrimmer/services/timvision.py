@@ -373,6 +373,37 @@ class TimVision(BaseService):
                     self.log.debug(login_json)
                 except subprocess.CalledProcessError as e:
                     self.log.info("Logging error: ", e)
+            elif system == "Linux":
+                passId_encoded = urllib.parse.quote(self.pass_id, safe='')
+                login_headers = {
+                    'accept': '*/*',
+                    'accept-language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,pt;q=0.5,ru;q=0.4',
+                    'content-type': 'application/x-www-form-urlencoded',
+                    'origin': 'https://www.timvision.it',
+                    'priority': 'u=1, i',
+                    'referer': 'https://www.timvision.it/',
+                    'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Linux"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'cross-site',
+                    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+                }
+                res = self.session.post(
+                    url=url,
+                    data={
+                        'portailId': portailId,
+                        'media': 'web',
+                        'vect': 'INTERNET',
+                        'passIdType': 'pass',
+                        'noCache': 'false',
+                        'passId': self.pass_id,
+                    },
+                    headers=login_headers,
+                )
+                login_json = json.loads(res.text)
+                self.log.debug(login_json)
             
             cache = login_json.get("response", {})
             self.device_cache_path.parent.mkdir(exist_ok=True, parents=True)

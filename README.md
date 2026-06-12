@@ -123,7 +123,7 @@ The main command engine is `vt dl`. You can run it by calling `poetry run vt dl`
 Helper scripts are provided in the `scripts/` directory for common tasks:
 - **Windows**: Use `scripts\download.[Service].bat` (e.g., `scripts\download.Amazon.bat`) for quick downloads.
 - **Linux**: Use `scripts/download.[Service].sh` (e.g., `scripts/download.Amazon.sh`) for quick downloads.
-- **Help**: Run `scripts\help.bat` (Windows) or `scripts/download.sh` (Linux) to see all available commands and flags.
+- **Help**: Run `scripts\help.bat` (Windows) or `scripts/help.sh` (Linux) to see all available commands and flags.
 - **Install**: Run `install.bat` (Windows) or `install.sh` (Linux) to set up the project.
 
 ### Configuration
