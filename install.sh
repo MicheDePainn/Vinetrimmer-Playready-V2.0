@@ -46,11 +46,11 @@ echo ""
 
 echo "Recommended system packages:"
 case "$DISTRO" in
-    deb)    echo "  sudo apt update && sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-dev libssl-dev python3-dev libxml2-dev libxslt1-dev libmediainfo0v5 pipx" ;;
-    rpm)    echo "  sudo dnf install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-devel openssl-devel python3-devel libxml2-devel libxslt-devel libmediainfo pipx" ;;
-    arch)   echo "  sudo pacman -S python python-pip python-virtualenv aria2 ffmpeg mkvtoolnix ccextractor curl libffi openssl libxml2 libxslt libmediainfo python-pipx" ;;
-    suse)   echo "  sudo zypper install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix ccextractor curl libffi-devel libopenssl-devel python3-devel libxml2-devel libxslt1-devel libmediainfo pipx" ;;
-    *)      echo "  Ensure python3, pip, aria2, ffmpeg, mkvtoolnix, ccextractor, and C-development headers are installed" ;;
+    deb)    echo "  sudo apt update && sudo apt install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix curl libffi-dev libssl-dev python3-dev libxml2-dev libxslt1-dev libmediainfo0v5 pipx" ;;
+    rpm)    echo "  sudo dnf install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix curl libffi-devel openssl-devel python3-devel libxml2-devel libxslt-devel libmediainfo pipx" ;;
+    arch)   echo "  sudo pacman -S python python-pip python-virtualenv aria2 ffmpeg mkvtoolnix curl libffi openssl libxml2 libxslt libmediainfo python-pipx" ;;
+    suse)   echo "  sudo zypper install python3 python3-pip python3-venv aria2 ffmpeg mkvtoolnix curl libffi-devel libopenssl-devel python3-devel libxml2-devel libxslt1-devel libmediainfo pipx" ;;
+    *)      echo "  Ensure python3, pip, aria2, ffmpeg, mkvtoolnix, and C-development headers are installed" ;;
 esac
 echo ""
 
